@@ -1,0 +1,27 @@
+# /etc/default/vpngate-socks-auth
+# Loaded by: /etc/systemd/system/vpngate-socks-auth.service
+#
+# NOTE:
+# - Leave SOCKS_ALLOWED_USERS empty to allow all system users.
+# - Set SOCKS_ALLOWED_USERS=worker (or comma-separated list) to restrict users.
+
+# SOCKS bind
+SOCKS_HOST=0.0.0.0
+SOCKS_PORT=7928
+
+# Restrict login users (empty = all system users)
+SOCKS_ALLOWED_USERS=
+
+# VPNGate scanning / probing
+MAX_SCAN_ROWS=300
+TEST_CANDIDATES=8
+OPENVPN_TEST_TIMEOUT_SECONDS=15
+
+# OpenVPN command + auth file content for VPNGate nodes
+OPENVPN_CMD=openvpn
+OPENVPN_AUTH_USER=vpn
+OPENVPN_AUTH_PASS=vpn
+
+# Optional overrides
+# VPNGATE_API_URL=https://www.vpngate.net/api/iphone/
+# VPNGATE_DATA_DIR=/opt/aimilivpn/vpngate_data
