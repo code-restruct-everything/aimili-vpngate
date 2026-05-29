@@ -1,0 +1,31 @@
+# /etc/default/vpngate-socks-auth-jp
+# Used by: systemctl start vpngate-socks-auth@jp
+
+# SOCKS endpoint
+SOCKS_HOST=0.0.0.0
+SOCKS_PORT=1080
+
+# Auth policy (empty = allow all local system users; set to worker to restrict)
+SOCKS_ALLOWED_USERS=
+
+# Force JP nodes
+VPNGATE_COUNTRY=
+VPNGATE_COUNTRY_SHORT=JP
+
+# Instance-unique network params (must not conflict with other instances)
+VPN_TUN_DEV=tun10
+VPN_ROUTE_TABLE=110
+OPENVPN_TEST_DEV=tun
+
+# Keep runtime files separate per instance to avoid collisions
+VPNGATE_DATA_DIR=/var/lib/vpngate-socks-auth/jp
+
+# Scan/probe tuning
+MAX_SCAN_ROWS=300
+TEST_CANDIDATES=8
+OPENVPN_TEST_TIMEOUT_SECONDS=15
+
+# OpenVPN credentials used by VPNGate public nodes
+OPENVPN_CMD=openvpn
+OPENVPN_AUTH_USER=vpn
+OPENVPN_AUTH_PASS=vpn

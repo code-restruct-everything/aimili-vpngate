@@ -1,0 +1,34 @@
+[Unit]
+Description=VPNGate SOCKS5 Gateway (Instance %i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/aimilivpn
+ExecStart=/usr/bin/python3 /opt/aimilivpn/vpngate_socks_auth.py
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/default/vpngate-socks-auth
+EnvironmentFile=-/etc/default/vpngate-socks-auth-%i
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=120
+StartLimitBurst=30
+KillMode=control-group
+TimeoutStopSec=20s
+LimitNOFILE=65535
+
+# This script needs root capabilities for:
+# - OpenVPN tun setup
+# - policy routing (ip rule / ip route)
+# - SO_BINDTODEVICE
+# - /etc/shadow read for system-user password auth
+User=root
+Group=root
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vpngate-socks-auth-%i
+
+[Install]
+WantedBy=multi-user.target

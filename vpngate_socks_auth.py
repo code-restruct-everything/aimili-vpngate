@@ -35,6 +35,9 @@ SOCKS_ALLOWED_USERS = tuple(
 )
 VPNGATE_COUNTRY = os.environ.get("VPNGATE_COUNTRY", "").strip()
 VPNGATE_COUNTRY_SHORT = os.environ.get("VPNGATE_COUNTRY_SHORT", "").strip().upper()
+VPN_TUN_DEV = os.environ.get("VPN_TUN_DEV", "tun0").strip() or "tun0"
+VPN_ROUTE_TABLE = int(os.environ.get("VPN_ROUTE_TABLE", "100"))
+OPENVPN_TEST_DEV = os.environ.get("OPENVPN_TEST_DEV", "tun").strip() or "tun"
 MAX_SCAN_ROWS = int(os.environ.get("MAX_SCAN_ROWS", "300"))
 TEST_CANDIDATES = int(os.environ.get("TEST_CANDIDATES", "8"))
 DATA_DIR = Path(os.environ.get("VPNGATE_DATA_DIR", Path(__file__).resolve().parent / "vpngate_data")).resolve()
@@ -334,35 +337,44 @@ def run_openvpn_until_ready(
     return ok, message, process
 
 
-def setup_policy_routing(interface: str = "tun0") -> None:
+def setup_policy_routing(interface: str, table_id: int) -> None:
     try:
-        subprocess.run(["ip", "rule", "del", "table", "100"], capture_output=True, timeout=2)
+        subprocess.run(["ip", "rule", "del", "oif", interface, "table", str(table_id)], capture_output=True, timeout=2)
     except Exception:
         pass
     try:
-        subprocess.run(["ip", "route", "flush", "table", "100"], capture_output=True, timeout=2)
+        subprocess.run(["ip", "route", "flush", "table", str(table_id)], capture_output=True, timeout=2)
     except Exception:
         pass
-    subprocess.run(["ip", "route", "add", "default", "dev", interface, "table", "100"], check=True, timeout=2)
-    subprocess.run(["ip", "rule", "add", "oif", interface, "table", "100"], check=True, timeout=2)
+    subprocess.run(
+        ["ip", "route", "add", "default", "dev", interface, "table", str(table_id)],
+        check=True,
+        timeout=2,
+    )
+    subprocess.run(["ip", "rule", "add", "oif", interface, "table", str(table_id)], check=True, timeout=2)
 
 
-def cleanup_policy_routing() -> None:
+def cleanup_policy_routing(interface: str, table_id: int) -> None:
     try:
-        subprocess.run(["ip", "rule", "del", "table", "100"], capture_output=True, timeout=2)
+        subprocess.run(["ip", "rule", "del", "oif", interface, "table", str(table_id)], capture_output=True, timeout=2)
     except Exception:
         pass
     try:
-        subprocess.run(["ip", "route", "flush", "table", "100"], capture_output=True, timeout=2)
+        subprocess.run(["ip", "route", "flush", "table", str(table_id)], capture_output=True, timeout=2)
     except Exception:
         pass
 
 
-def kill_existing_openvpn_processes() -> None:
+def kill_existing_openvpn_processes(interface: str) -> None:
     if not sys_platform_linux():
         return
     try:
-        subprocess.run(["pkill", "-f", "openvpn.*tun0"], capture_output=True, timeout=2)
+        pattern = f"openvpn.*--dev[[:space:]]+{interface}([[:space:]]|$)"
+        subprocess.run(
+            ["pkill", "-f", pattern],
+            capture_output=True,
+            timeout=2,
+        )
     except Exception:
         pass
 
@@ -379,7 +391,7 @@ def connect_candidate(node: Node, dev: str, keep_alive: bool, timeout: int) -> t
 def pick_best_node(candidates: list[Node]) -> Node:
     tested: list[tuple[Node, int]] = []
     for idx, node in enumerate(candidates[: max(1, TEST_CANDIDATES)]):
-        test_dev = f"tun{idx + 2}"
+        test_dev = OPENVPN_TEST_DEV
         log(f"Testing candidate {idx + 1}/{min(len(candidates), TEST_CANDIDATES)}: {node.id}")
         latency = vpn_utils.ping_latency_ms(node.ip or node.remote_host, node.remote_port, node.ping)
         ok, msg, _ = connect_candidate(node, dev=test_dev, keep_alive=False, timeout=OPENVPN_TEST_TIMEOUT_SECONDS)
@@ -402,18 +414,23 @@ def pick_best_node(candidates: list[Node]) -> Node:
 def activate_node(node: Node) -> None:
     global active_openvpn_process, active_node
     with openvpn_lock:
-        cleanup_policy_routing()
+        cleanup_policy_routing(VPN_TUN_DEV, VPN_ROUTE_TABLE)
         stop_process(active_openvpn_process)
         active_openvpn_process = None
         active_node = None
-        kill_existing_openvpn_processes()
+        kill_existing_openvpn_processes(VPN_TUN_DEV)
 
-        ok, msg, process = connect_candidate(node, dev="tun0", keep_alive=True, timeout=max(25, OPENVPN_TEST_TIMEOUT_SECONDS))
+        ok, msg, process = connect_candidate(
+            node,
+            dev=VPN_TUN_DEV,
+            keep_alive=True,
+            timeout=max(25, OPENVPN_TEST_TIMEOUT_SECONDS),
+        )
         if not ok or process is None:
             raise RuntimeError(f"Failed to connect {node.id}: {msg}")
         active_openvpn_process = process
         active_node = node
-        setup_policy_routing("tun0")
+        setup_policy_routing(VPN_TUN_DEV, VPN_ROUTE_TABLE)
         log(f"Connected node: {node.id}")
 
 
@@ -478,7 +495,7 @@ def verify_proxy_credentials(username: str, password: str) -> bool:
     return hmac.compare_digest(calculated_hash, stored_hash)
 
 
-def resolve_dns_over_tun0(host: str, dns_server: str = "8.8.8.8", timeout: float = 3.0) -> str | None:
+def resolve_dns_over_tun(host: str, interface: str, dns_server: str = "8.8.8.8", timeout: float = 3.0) -> str | None:
     try:
         socket.inet_aton(host)
         return host
@@ -506,7 +523,7 @@ def resolve_dns_over_tun0(host: str, dns_server: str = "8.8.8.8", timeout: float
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         sock.settimeout(timeout)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, b"tun0")
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, interface.encode("utf-8"))
         sock.sendto(packet, (dns_server, 53))
         resp, _ = sock.recvfrom(2048)
     except Exception:
@@ -555,8 +572,8 @@ def resolve_dns_over_tun0(host: str, dns_server: str = "8.8.8.8", timeout: float
     return None
 
 
-def create_connection_via_tun0(host: str, port: int, timeout: float = 20.0) -> socket.socket:
-    resolved = resolve_dns_over_tun0(host)
+def create_connection_via_tun(host: str, port: int, interface: str, timeout: float = 20.0) -> socket.socket:
+    resolved = resolve_dns_over_tun(host, interface)
     if resolved:
         host = resolved
 
@@ -566,7 +583,7 @@ def create_connection_via_tun0(host: str, port: int, timeout: float = 20.0) -> s
         try:
             sock = socket.socket(af, socktype, proto)
             sock.settimeout(timeout)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, b"tun0")
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, interface.encode("utf-8"))
             sock.connect(sa)
             return sock
         except OSError as exc:
@@ -648,7 +665,7 @@ def handle_socks_client(client: socket.socket, address: tuple[str, int]) -> None
         port = int.from_bytes(recv_exact(client, 2), "big")
 
         try:
-            upstream = create_connection_via_tun0(host, port, timeout=20)
+            upstream = create_connection_via_tun(host, port, interface=VPN_TUN_DEV, timeout=20)
         except Exception as exc:
             log(f"Upstream connect failed {host}:{port}: {exc}")
             socks5_reply(client, 4)
@@ -702,7 +719,7 @@ def start_socks_server(host: str, port: int) -> None:
 def graceful_shutdown(*_: Any) -> None:
     stop_event.set()
     with openvpn_lock:
-        cleanup_policy_routing()
+        cleanup_policy_routing(VPN_TUN_DEV, VPN_ROUTE_TABLE)
         stop_process(active_openvpn_process)
     log("Shutdown complete.")
     raise SystemExit(0)
@@ -717,6 +734,12 @@ def require_linux_root() -> None:
 
 def main() -> None:
     require_linux_root()
+    if VPN_ROUTE_TABLE <= 0:
+        raise RuntimeError("VPN_ROUTE_TABLE must be a positive integer.")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", VPN_TUN_DEV):
+        raise RuntimeError("VPN_TUN_DEV contains invalid characters.")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", OPENVPN_TEST_DEV):
+        raise RuntimeError("OPENVPN_TEST_DEV contains invalid characters.")
     ensure_dirs()
     signal.signal(signal.SIGINT, graceful_shutdown)
     signal.signal(signal.SIGTERM, graceful_shutdown)
@@ -726,6 +749,7 @@ def main() -> None:
         raise RuntimeError("System user auth requires read access to /etc/shadow (run as root).")
     allowed = ",".join(SOCKS_ALLOWED_USERS) if SOCKS_ALLOWED_USERS else "(all system users)"
     log(f"SOCKS auth mode: system users (allowed users: {allowed})")
+    log(f"Runtime network: tun={VPN_TUN_DEV}, route_table={VPN_ROUTE_TABLE}, test_dev={OPENVPN_TEST_DEV}")
     if VPNGATE_COUNTRY or VPNGATE_COUNTRY_SHORT:
         log(f"VPNGate country filter: country={VPNGATE_COUNTRY or '-'}, country_short={VPNGATE_COUNTRY_SHORT or '-'}")
 

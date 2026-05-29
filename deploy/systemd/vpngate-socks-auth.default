@@ -1,9 +1,13 @@
 # /etc/default/vpngate-socks-auth
-# Loaded by: /etc/systemd/system/vpngate-socks-auth.service
+# Loaded by:
+# - /etc/systemd/system/vpngate-socks-auth.service
+# - /etc/systemd/system/vpngate-socks-auth@.service
 #
 # NOTE:
 # - Leave SOCKS_ALLOWED_USERS empty to allow all system users.
 # - Set SOCKS_ALLOWED_USERS=worker (or comma-separated list) to restrict users.
+# - For multi-instance mode, put common values here and override per-instance in:
+#   /etc/default/vpngate-socks-auth-<instance>
 
 # SOCKS bind
 SOCKS_HOST=0.0.0.0
@@ -23,6 +27,11 @@ OPENVPN_TEST_TIMEOUT_SECONDS=15
 VPNGATE_COUNTRY=
 VPNGATE_COUNTRY_SHORT=
 
+# Network namespace for this instance (must be unique across parallel instances)
+VPN_TUN_DEV=tun0
+VPN_ROUTE_TABLE=100
+OPENVPN_TEST_DEV=tun
+
 # OpenVPN command + auth file content for VPNGate nodes
 OPENVPN_CMD=openvpn
 OPENVPN_AUTH_USER=vpn
@@ -31,3 +40,4 @@ OPENVPN_AUTH_PASS=vpn
 # Optional overrides
 # VPNGATE_API_URL=https://www.vpngate.net/api/iphone/
 # VPNGATE_DATA_DIR=/opt/aimilivpn/vpngate_data
+# For multi-instance mode, set different VPNGATE_DATA_DIR in each instance file.

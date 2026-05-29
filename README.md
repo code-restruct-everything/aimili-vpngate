@@ -179,3 +179,129 @@ sudo dpkg --configure -a
 sudo apt-get update
 ```
 Once done, re-run the installation script.
+
+---
+
+## `vpngate_socks_auth.py` Usage (Single and Multi Proxy)
+
+### 中文速览
+
+1. 单代理：使用 `vpngate-socks-auth.service` + `/etc/default/vpngate-socks-auth`。
+2. 多代理：使用 `vpngate-socks-auth@.service` + `/etc/default/vpngate-socks-auth-<instance>`。
+3. 每个实例必须设置不同的 `SOCKS_PORT`、`VPN_TUN_DEV`、`VPN_ROUTE_TABLE`、`VPNGATE_DATA_DIR`。
+4. 国家筛选可用 `VPNGATE_COUNTRY` 或 `VPNGATE_COUNTRY_SHORT`（例如 `JP`、`US`）。
+5. SOCKS5 用户名密码来自系统用户（`/etc/shadow` 校验），可用 `SOCKS_ALLOWED_USERS` 限制账号白名单。
+
+This script is a standalone SOCKS5 gateway:
+
+1. Pulls VPNGate candidates and probes the best available node.
+2. Connects OpenVPN on Linux (`tun` device).
+3. Exposes a local SOCKS5 proxy with username/password authentication based on Linux system users.
+4. Forces upstream traffic to the VPN interface via policy routing and `SO_BINDTODEVICE` (to reduce egress IP leak risk).
+
+### Requirements
+
+1. Linux host (Ubuntu/Debian recommended).
+2. `python3`, `openvpn`, `iproute2`.
+3. Root privileges are required (`/etc/shadow` auth check + tun/routing operations).
+
+### Environment Variables
+
+Common:
+
+1. `SOCKS_HOST` default `0.0.0.0`
+2. `SOCKS_PORT` default `7928`
+3. `SOCKS_ALLOWED_USERS` default empty (allow all system users); example: `worker` or `worker,alice`
+4. `TEST_CANDIDATES` default `8`
+5. `MAX_SCAN_ROWS` default `300`
+6. `OPENVPN_TEST_TIMEOUT_SECONDS` default `15`
+7. `OPENVPN_AUTH_USER`/`OPENVPN_AUTH_PASS` default `vpn`/`vpn` (VPNGate public default)
+8. `VPNGATE_COUNTRY` optional full country name (e.g. `Japan`)
+9. `VPNGATE_COUNTRY_SHORT` optional ISO short name (e.g. `JP`)
+
+Multi-instance critical (must be unique per instance):
+
+1. `VPN_TUN_DEV` default `tun0` (examples: `tun10`, `tun11`)
+2. `VPN_ROUTE_TABLE` default `100` (examples: `110`, `111`)
+3. `VPNGATE_DATA_DIR` should be separated per instance (for example `/var/lib/vpngate-socks-auth/jp`)
+
+### Single Proxy (Direct Run)
+
+```bash
+cd /opt/aimilivpn
+export SOCKS_HOST=0.0.0.0
+export SOCKS_PORT=1080
+export SOCKS_ALLOWED_USERS=worker
+export VPNGATE_COUNTRY_SHORT=JP
+export VPN_TUN_DEV=tun10
+export VPN_ROUTE_TABLE=110
+export VPNGATE_DATA_DIR=/var/lib/vpngate-socks-auth/jp
+sudo -E python3 vpngate_socks_auth.py
+```
+
+### Single Proxy (systemd Service)
+
+Use the fixed-name service:
+
+1. `deploy/systemd/vpngate-socks-auth.service`
+2. `deploy/systemd/vpngate-socks-auth.default`
+
+```bash
+sudo cp deploy/systemd/vpngate-socks-auth.service /etc/systemd/system/
+sudo cp deploy/systemd/vpngate-socks-auth.default /etc/default/vpngate-socks-auth
+sudo systemctl daemon-reload
+sudo systemctl enable --now vpngate-socks-auth
+sudo systemctl status vpngate-socks-auth
+```
+
+### Multi Proxy (systemd `@` Instances)
+
+Use the template service:
+
+1. `deploy/systemd/vpngate-socks-auth@.service`
+2. Global defaults: `deploy/systemd/vpngate-socks-auth.default`
+3. Instance examples:
+   `deploy/systemd/vpngate-socks-auth-jp.default.example`
+   `deploy/systemd/vpngate-socks-auth-us.default.example`
+
+```bash
+sudo cp deploy/systemd/vpngate-socks-auth@.service /etc/systemd/system/
+sudo cp deploy/systemd/vpngate-socks-auth.default /etc/default/vpngate-socks-auth
+sudo cp deploy/systemd/vpngate-socks-auth-jp.default.example /etc/default/vpngate-socks-auth-jp
+sudo cp deploy/systemd/vpngate-socks-auth-us.default.example /etc/default/vpngate-socks-auth-us
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now vpngate-socks-auth@jp
+sudo systemctl enable --now vpngate-socks-auth@us
+```
+
+Each instance should use different:
+
+1. `SOCKS_PORT`
+2. `VPNGATE_COUNTRY` or `VPNGATE_COUNTRY_SHORT`
+3. `VPN_TUN_DEV`
+4. `VPN_ROUTE_TABLE`
+5. `VPNGATE_DATA_DIR`
+
+### Check / Verify
+
+```bash
+sudo systemctl status vpngate-socks-auth@jp
+sudo systemctl status vpngate-socks-auth@us
+sudo journalctl -u vpngate-socks-auth@jp -f
+sudo journalctl -u vpngate-socks-auth@us -f
+ss -lntp | grep -E '1080|1081'
+```
+
+Test proxy authentication:
+
+```bash
+curl --proxy socks5h://worker:YOUR_PASSWORD@127.0.0.1:1080 https://api.ipify.org
+```
+
+### Authentication Notes
+
+1. Auth source is Linux system users (`/etc/shadow` hash verification).
+2. Empty `SOCKS_ALLOWED_USERS` means any valid local user can authenticate.
+3. Set `SOCKS_ALLOWED_USERS=worker` if you want only `worker` to use the proxy.
+4. No plaintext proxy password is stored in this script; it checks against system user passwords.
