@@ -33,6 +33,8 @@ SOCKS_PORT = int(os.environ.get("SOCKS_PORT", "7928"))
 SOCKS_ALLOWED_USERS = tuple(
     user.strip() for user in os.environ.get("SOCKS_ALLOWED_USERS", "").split(",") if user.strip()
 )
+VPNGATE_COUNTRY = os.environ.get("VPNGATE_COUNTRY", "").strip()
+VPNGATE_COUNTRY_SHORT = os.environ.get("VPNGATE_COUNTRY_SHORT", "").strip().upper()
 MAX_SCAN_ROWS = int(os.environ.get("MAX_SCAN_ROWS", "300"))
 TEST_CANDIDATES = int(os.environ.get("TEST_CANDIDATES", "8"))
 DATA_DIR = Path(os.environ.get("VPNGATE_DATA_DIR", Path(__file__).resolve().parent / "vpngate_data")).resolve()
@@ -154,6 +156,24 @@ def row_to_node(row: dict[str, str], config_text: str) -> Node:
     )
 
 
+def row_matches_country_filter(row: dict[str, str]) -> bool:
+    if VPNGATE_COUNTRY_SHORT:
+        row_short = (row.get("CountryShort", "") or "").strip().upper()
+        if row_short != VPNGATE_COUNTRY_SHORT:
+            return False
+
+    if VPNGATE_COUNTRY:
+        row_long = (row.get("CountryLong", "") or "").strip()
+        row_short = (row.get("CountryShort", "") or "").strip()
+        row_zh = vpn_utils.COUNTRY_TRANSLATIONS.get(row_long, vpn_utils.COUNTRY_TRANSLATIONS.get(row_long.strip(), row_long))
+        target = VPNGATE_COUNTRY.lower()
+        candidates = {row_long.lower(), row_short.lower(), (row_zh or "").lower()}
+        if target not in candidates:
+            return False
+
+    return True
+
+
 def fetch_candidates() -> list[Node]:
     api_text = fetch_api_text()
     rows = parse_vpngate_rows(api_text)
@@ -162,6 +182,8 @@ def fetch_candidates() -> list[Node]:
     for row in rows[:MAX_SCAN_ROWS]:
         ip = row.get("IP", "")
         if not ip or ip in seen_ips:
+            continue
+        if not row_matches_country_filter(row):
             continue
         encoded = row.get("OpenVPN_ConfigData_Base64", "")
         if not encoded:
@@ -704,6 +726,8 @@ def main() -> None:
         raise RuntimeError("System user auth requires read access to /etc/shadow (run as root).")
     allowed = ",".join(SOCKS_ALLOWED_USERS) if SOCKS_ALLOWED_USERS else "(all system users)"
     log(f"SOCKS auth mode: system users (allowed users: {allowed})")
+    if VPNGATE_COUNTRY or VPNGATE_COUNTRY_SHORT:
+        log(f"VPNGate country filter: country={VPNGATE_COUNTRY or '-'}, country_short={VPNGATE_COUNTRY_SHORT or '-'}")
 
     log("Fetching VPNGate candidates...")
     candidates = fetch_candidates()

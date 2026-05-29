@@ -17,6 +17,12 @@ MAX_SCAN_ROWS=300
 TEST_CANDIDATES=8
 OPENVPN_TEST_TIMEOUT_SECONDS=15
 
+# Optional country filters (empty = no country restriction)
+# Example: VPNGATE_COUNTRY=Japan
+# Example: VPNGATE_COUNTRY_SHORT=JP
+VPNGATE_COUNTRY=
+VPNGATE_COUNTRY_SHORT=
+
 # OpenVPN command + auth file content for VPNGate nodes
 OPENVPN_CMD=openvpn
 OPENVPN_AUTH_USER=vpn
