@@ -27,6 +27,18 @@ OPENVPN_TEST_TIMEOUT_SECONDS=15
 VPNGATE_COUNTRY=
 VPNGATE_COUNTRY_SHORT=
 
+# Optional risk filters (disabled by default; set per-instance when needed)
+VPNGATE_RISK_ENABLE=0
+VPNGATE_RISK_BLOCK_QUALITY=proxy,datacenter
+VPNGATE_RISK_ASN_BLACKLIST=
+VPNGATE_RISK_GEOIP_THRESHOLD=70
+VPNGATE_RISK_COUNTRY_SCORES=
+VPNGATE_RISK_PROXY_SCORE=80
+VPNGATE_RISK_DATACENTER_SCORE=60
+VPNGATE_RISK_MOBILE_SCORE=20
+VPNGATE_RISK_FAIL_OPEN=1
+# VPNGATE_RISK_API_URL=http://ip-api.com/batch?fields=status,query,countryCode,proxy,hosting,mobile,as,asname
+
 # Network namespace for this instance (must be unique across parallel instances)
 VPN_TUN_DEV=tun0
 VPN_ROUTE_TABLE=100

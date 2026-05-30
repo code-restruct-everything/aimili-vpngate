@@ -6,6 +6,7 @@ import csv
 import ctypes
 import ctypes.util
 import hmac
+import json
 import os
 import queue
 import re
@@ -23,23 +24,98 @@ from typing import Any
 
 import vpn_utils
 
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name, str(default))
+    try:
+        return int((raw or "").strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_csv(name: str, default: str = "") -> tuple[str, ...]:
+    raw = os.environ.get(name, default) or default
+    values = []
+    for item in raw.split(","):
+        token = item.strip().lower()
+        if token:
+            values.append(token)
+    return tuple(values)
+
+
+def _parse_country_score_map(raw: str) -> dict[str, int]:
+    score_map: dict[str, int] = {}
+    for item in (raw or "").split(","):
+        token = item.strip()
+        if not token or ":" not in token:
+            continue
+        code, score_text = token.split(":", 1)
+        code = code.strip().upper()
+        if not code:
+            continue
+        try:
+            score_map[code] = int(score_text.strip())
+        except ValueError:
+            continue
+    return score_map
+
+
+def _parse_asn_blacklist(raw: str) -> tuple[set[str], set[str]]:
+    asn_codes: set[str] = set()
+    asn_nums: set[str] = set()
+    for item in (raw or "").split(","):
+        token = item.strip().upper()
+        if not token:
+            continue
+        match = re.search(r"^(?:AS)?(\d+)$", token)
+        if not match:
+            continue
+        num = match.group(1)
+        asn_nums.add(num)
+        asn_codes.add(f"AS{num}")
+    return asn_codes, asn_nums
+
+
 API_URL = os.environ.get("VPNGATE_API_URL", "https://www.vpngate.net/api/iphone/")
 OPENVPN_CMD = os.environ.get("OPENVPN_CMD", "openvpn")
 OPENVPN_AUTH_USER = os.environ.get("OPENVPN_AUTH_USER", "vpn")
 OPENVPN_AUTH_PASS = os.environ.get("OPENVPN_AUTH_PASS", "vpn")
-OPENVPN_TEST_TIMEOUT_SECONDS = int(os.environ.get("OPENVPN_TEST_TIMEOUT_SECONDS", "15"))
+OPENVPN_TEST_TIMEOUT_SECONDS = _env_int("OPENVPN_TEST_TIMEOUT_SECONDS", 15)
 SOCKS_HOST = os.environ.get("SOCKS_HOST", "0.0.0.0")
-SOCKS_PORT = int(os.environ.get("SOCKS_PORT", "7928"))
+SOCKS_PORT = _env_int("SOCKS_PORT", 7928)
 SOCKS_ALLOWED_USERS = tuple(
     user.strip() for user in os.environ.get("SOCKS_ALLOWED_USERS", "").split(",") if user.strip()
 )
 VPNGATE_COUNTRY = os.environ.get("VPNGATE_COUNTRY", "").strip()
 VPNGATE_COUNTRY_SHORT = os.environ.get("VPNGATE_COUNTRY_SHORT", "").strip().upper()
 VPN_TUN_DEV = os.environ.get("VPN_TUN_DEV", "tun0").strip() or "tun0"
-VPN_ROUTE_TABLE = int(os.environ.get("VPN_ROUTE_TABLE", "100"))
+VPN_ROUTE_TABLE = _env_int("VPN_ROUTE_TABLE", 100)
 OPENVPN_TEST_DEV = os.environ.get("OPENVPN_TEST_DEV", "tun").strip() or "tun"
-MAX_SCAN_ROWS = int(os.environ.get("MAX_SCAN_ROWS", "300"))
-TEST_CANDIDATES = int(os.environ.get("TEST_CANDIDATES", "8"))
+MAX_SCAN_ROWS = _env_int("MAX_SCAN_ROWS", 300)
+TEST_CANDIDATES = _env_int("TEST_CANDIDATES", 8)
+VPNGATE_RISK_ENABLE = _env_bool("VPNGATE_RISK_ENABLE", False)
+VPNGATE_RISK_BLOCK_QUALITY = set(_env_csv("VPNGATE_RISK_BLOCK_QUALITY", "proxy,datacenter"))
+VPNGATE_RISK_ASN_BLACKLIST_RAW = os.environ.get("VPNGATE_RISK_ASN_BLACKLIST", "")
+VPNGATE_RISK_ASN_BLACKLIST_CODES, VPNGATE_RISK_ASN_BLACKLIST_NUMS = _parse_asn_blacklist(
+    VPNGATE_RISK_ASN_BLACKLIST_RAW
+)
+VPNGATE_RISK_GEOIP_THRESHOLD = _env_int("VPNGATE_RISK_GEOIP_THRESHOLD", 70)
+VPNGATE_RISK_PROXY_SCORE = _env_int("VPNGATE_RISK_PROXY_SCORE", 80)
+VPNGATE_RISK_DATACENTER_SCORE = _env_int("VPNGATE_RISK_DATACENTER_SCORE", 60)
+VPNGATE_RISK_MOBILE_SCORE = _env_int("VPNGATE_RISK_MOBILE_SCORE", 20)
+VPNGATE_RISK_COUNTRY_SCORE_MAP = _parse_country_score_map(os.environ.get("VPNGATE_RISK_COUNTRY_SCORES", ""))
+VPNGATE_RISK_FAIL_OPEN = _env_bool("VPNGATE_RISK_FAIL_OPEN", True)
+VPNGATE_RISK_API_URL = os.environ.get(
+    "VPNGATE_RISK_API_URL",
+    "http://ip-api.com/batch?fields=status,query,countryCode,proxy,hosting,mobile,as,asname",
+).strip()
 DATA_DIR = Path(os.environ.get("VPNGATE_DATA_DIR", Path(__file__).resolve().parent / "vpngate_data")).resolve()
 CONFIG_DIR = DATA_DIR / "configs"
 AUTH_FILE = DATA_DIR / "vpngate_auth.txt"
@@ -85,6 +161,10 @@ class Node:
     remote_host: str
     remote_port: int
     proto: str
+    asn: str = ""
+    quality: str = ""
+    country_code: str = ""
+    geoip_risk: int = 0
 
 
 def log(msg: str) -> None:
@@ -131,6 +211,155 @@ def parse_vpngate_rows(text: str) -> list[dict[str, str]]:
     if lines and lines[0].startswith("#"):
         lines[0] = lines[0][1:]
     return list(csv.DictReader(lines))
+
+
+def _extract_asn_tokens(raw_asn: str) -> tuple[str, str]:
+    upper = (raw_asn or "").upper()
+    matched = re.search(r"\bAS(\d+)\b", upper)
+    if matched:
+        num = matched.group(1)
+        return f"AS{num}", num
+    matched = re.search(r"\b(\d+)\b", upper)
+    if matched:
+        num = matched.group(1)
+        return f"AS{num}", num
+    return "", ""
+
+
+def query_risk_metadata(candidates: list[Node]) -> dict[str, dict[str, Any]]:
+    ips: list[str] = []
+    seen: set[str] = set()
+    for node in candidates:
+        ip = (node.ip or node.remote_host or "").strip()
+        if not ip or ip in seen:
+            continue
+        seen.add(ip)
+        ips.append(ip)
+
+    if not ips:
+        return {}
+
+    metadata: dict[str, dict[str, Any]] = {}
+    for i in range(0, len(ips), 100):
+        chunk = ips[i : i + 100]
+        request = urllib.request.Request(
+            VPNGATE_RISK_API_URL,
+            data=json.dumps(chunk).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "vpngate-socks-auth/1.0",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            payload = response.read().decode("utf-8", errors="replace")
+            items = json.loads(payload)
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("status") != "success":
+                    continue
+                ip = str(item.get("query") or "").strip()
+                if not ip:
+                    continue
+
+                is_proxy = bool(item.get("proxy"))
+                is_hosting = bool(item.get("hosting"))
+                is_mobile = bool(item.get("mobile"))
+                quality = "normal"
+                if is_proxy:
+                    quality = "proxy"
+                elif is_hosting:
+                    quality = "datacenter"
+                elif is_mobile:
+                    quality = "mobile"
+
+                asn_raw = str(item.get("as") or "").strip()
+                asn_code, asn_num = _extract_asn_tokens(asn_raw)
+                country_code = str(item.get("countryCode") or "").strip().upper()
+
+                risk_score = 0
+                if is_proxy:
+                    risk_score += VPNGATE_RISK_PROXY_SCORE
+                if is_hosting:
+                    risk_score += VPNGATE_RISK_DATACENTER_SCORE
+                if is_mobile:
+                    risk_score += VPNGATE_RISK_MOBILE_SCORE
+                if country_code:
+                    risk_score += VPNGATE_RISK_COUNTRY_SCORE_MAP.get(country_code, 0)
+
+                metadata[ip] = {
+                    "quality": quality,
+                    "asn_code": asn_code,
+                    "asn_num": asn_num,
+                    "country_code": country_code,
+                    "risk_score": risk_score,
+                }
+    return metadata
+
+
+def apply_risk_filters(candidates: list[Node]) -> list[Node]:
+    if not VPNGATE_RISK_ENABLE or not candidates:
+        return candidates
+
+    try:
+        meta_by_ip = query_risk_metadata(candidates)
+    except Exception as exc:
+        if VPNGATE_RISK_FAIL_OPEN:
+            log(f"Risk metadata query failed, fail-open enabled: {exc}")
+            return candidates
+        raise RuntimeError(f"Risk metadata query failed: {exc}")
+
+    filtered: list[Node] = []
+    blocked: list[str] = []
+    missing_meta = 0
+
+    for node in candidates:
+        ip = (node.ip or node.remote_host or "").strip()
+        meta = meta_by_ip.get(ip)
+        reasons: list[str] = []
+
+        if not meta:
+            if VPNGATE_RISK_FAIL_OPEN:
+                missing_meta += 1
+                filtered.append(node)
+                continue
+            reasons.append("geoip_unavailable")
+        else:
+            quality = str(meta.get("quality") or "")
+            asn_code = str(meta.get("asn_code") or "")
+            asn_num = str(meta.get("asn_num") or "")
+            country_code = str(meta.get("country_code") or "")
+            risk_score = parse_int(meta.get("risk_score"))
+
+            node.quality = quality
+            node.asn = asn_code
+            node.country_code = country_code
+            node.geoip_risk = risk_score
+
+            if quality and quality.lower() in VPNGATE_RISK_BLOCK_QUALITY:
+                reasons.append(f"quality={quality}")
+            if asn_code in VPNGATE_RISK_ASN_BLACKLIST_CODES or (asn_num and asn_num in VPNGATE_RISK_ASN_BLACKLIST_NUMS):
+                reasons.append(f"asn={asn_code or asn_num}")
+            if VPNGATE_RISK_GEOIP_THRESHOLD >= 0 and risk_score >= VPNGATE_RISK_GEOIP_THRESHOLD:
+                reasons.append(f"risk={risk_score}")
+
+        if reasons:
+            blocked.append(f"{node.id}({','.join(reasons)})")
+            continue
+        filtered.append(node)
+
+    if blocked:
+        preview = "; ".join(blocked[:10])
+        if len(blocked) > 10:
+            preview += "; ..."
+        log(f"Risk filter removed {len(blocked)} candidate(s); kept {len(filtered)}. {preview}")
+    if missing_meta:
+        log(f"Risk metadata missing for {missing_meta} candidate(s), kept due to fail-open mode.")
+
+    return filtered
 
 
 def decode_config(encoded: str) -> str:
@@ -195,6 +424,7 @@ def fetch_candidates() -> list[Node]:
         candidates.append(row_to_node(row, config_text))
         seen_ips.add(ip)
     candidates.sort(key=lambda n: (-n.score, n.ping if n.ping > 0 else 999999))
+    candidates = apply_risk_filters(candidates)
     return candidates
 
 
@@ -752,6 +982,20 @@ def main() -> None:
     log(f"Runtime network: tun={VPN_TUN_DEV}, route_table={VPN_ROUTE_TABLE}, test_dev={OPENVPN_TEST_DEV}")
     if VPNGATE_COUNTRY or VPNGATE_COUNTRY_SHORT:
         log(f"VPNGate country filter: country={VPNGATE_COUNTRY or '-'}, country_short={VPNGATE_COUNTRY_SHORT or '-'}")
+    if VPNGATE_RISK_ENABLE:
+        quality_rules = ",".join(sorted(VPNGATE_RISK_BLOCK_QUALITY)) or "-"
+        asn_rules = ",".join(sorted(VPNGATE_RISK_ASN_BLACKLIST_CODES)) or "-"
+        country_rules = ",".join(
+            f"{code}:{score}" for code, score in sorted(VPNGATE_RISK_COUNTRY_SCORE_MAP.items())
+        ) or "-"
+        log(
+            "Risk filter enabled: "
+            f"block_quality={quality_rules}, "
+            f"asn_blacklist={asn_rules}, "
+            f"geoip_threshold={VPNGATE_RISK_GEOIP_THRESHOLD}, "
+            f"country_scores={country_rules}, "
+            f"fail_open={VPNGATE_RISK_FAIL_OPEN}"
+        )
 
     log("Fetching VPNGate candidates...")
     candidates = fetch_candidates()
@@ -760,7 +1004,11 @@ def main() -> None:
 
     log(f"Fetched {len(candidates)} candidates, testing top {min(len(candidates), TEST_CANDIDATES)}")
     best = pick_best_node(candidates)
-    log(f"Selected best node: {best.id} ({best.remote_host}:{best.remote_port}, score={best.score}, ping={best.ping})")
+    log(
+        f"Selected best node: {best.id} ({best.remote_host}:{best.remote_port}, "
+        f"score={best.score}, ping={best.ping}, quality={best.quality or '-'}, "
+        f"asn={best.asn or '-'}, geoip_risk={best.geoip_risk})"
+    )
 
     activate_node(best)
     start_socks_server(SOCKS_HOST, SOCKS_PORT)
