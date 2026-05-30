@@ -416,3 +416,16 @@
 - 证据等级（已验证 / 观察 / 猜想）: 观察
 - 引出的下一步问题: 若要扩展 provider，是否只接入“有明确公开文档 + 明确授权条款 + 稳定版本协议”的来源？
 - 下一步计划: 先把接入门槛固化为合规清单（公开文档、授权文本、速率/用途限制、撤销机制），再决定是否为 Riseup 做最小 PoC。
+## N033
+- branch_id: B001
+- parent_node_ids: N032
+- relation_type: next
+- 当时问题: 用户线上服务 `vpngate-socks-auth@us` 启动时报 `No usable VPNGate node found after testing`，不清楚具体是什么意思。
+- 触发原因（为什么想到这个）: 用户贴出了完整 `journalctl` 日志，日志里先出现 OpenVPN `connection failed`，随后候选节点被标记 unavailable，最后脚本抛异常退出。
+- 当时假设: 这不是 systemd 本身故障，而是候选节点连通性测试阶段全部失败；由于 OpenVPN 命令带了 `--connect-retry-max 1`，每个候选只尝试一次，失败后很快触发“无可用节点”。
+- 采取动作（做了什么实验/改了什么）: 对照日志复核 `vpngate_socks_auth.py` 的 `openvpn_command()`、`run_openvpn_until_ready()`、`pick_best_node()` 逻辑，确认失败路径与报错文案对应关系。
+- 观察结果（事实）: 代码在 `pick_best_node()` 中若 `tested` 为空会直接抛出该 RuntimeError；OpenVPN 命令固定包含 `--connect-retry-max 1` 和 `--connect-timeout 15`，候选测试超时或建链失败会被记为 unavailable。
+- 当时结论（解释）: 这条报错的含义是“这次选出来要测试的 US 节点都没连上，因此程序主动退出”；systemd 只是接到进程异常退出后标记服务失败。
+- 证据等级（已验证 / 观察 / 猜想）: 已验证
+- 引出的下一步问题: 线上失败是短时节点波动，还是筛选范围太窄/测试参数过紧导致可用节点被全部筛掉？
+- 下一步计划: 先指导用户做无侵入排查（看候选数量、国家筛选、连续重启日志趋势），必要时再做最小参数调整（如提高 `TEST_CANDIDATES`、放宽超时）并观察恢复率。
