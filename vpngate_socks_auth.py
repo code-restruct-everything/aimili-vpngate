@@ -808,7 +808,7 @@ def create_connection_via_tun(host: str, port: int, interface: str, timeout: flo
         host = resolved
 
     last_err: OSError | None = None
-    for af, socktype, proto, _, sa in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
+    for af, socktype, proto, _, sa in socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM):
         sock = None
         try:
             sock = socket.socket(af, socktype, proto)
@@ -888,7 +888,9 @@ def handle_socks_client(client: socket.socket, address: tuple[str, int]) -> None
         elif atyp == 3:
             host = recv_exact(client, recv_exact(client, 1)[0]).decode("idna")
         elif atyp == 4:
-            host = socket.inet_ntop(socket.AF_INET6, recv_exact(client, 16))
+            recv_exact(client, 16)
+            socks5_reply(client, 8)
+            return
         else:
             socks5_reply(client, 8)
             return

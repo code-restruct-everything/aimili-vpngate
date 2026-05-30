@@ -143,3 +143,42 @@
 - 证据等级: 已验证
 - 引出的下一步问题: 是否立即实现多实例参数化并给出 pngate-socks-auth@.service 模板。
 - 下一步计划: 待用户确认后执行代码改造并输出多国家并行部署步骤。
+## N012
+- branch_id: B001
+- parent_node_ids: N011
+- relation_type: next
+- 当时问题: JP 和 US 两个实例都显示 OpenVPN 已连上，但代理访问目标站点时大量失败，为什么会同时出现 [Errno 101] Network is unreachable 和 timed out？
+- 触发原因（为什么想到这个）: 用户贴出的 journalctl -u vpngate-socks-auth@jp/us -f 日志里，连接建立成功后才开始报上游连接失败，现象指向隧道可用但出站不通。
+- 当时假设: Network is unreachable 主要来自 IPv6 目标在当前策略路由下无可达路由；timed out 则更像节点链路质量差、远端丢包或目标站点经该节点不可达。
+- 采取动作（做了什么实验/改了什么）: 检查 vpngate_socks_auth.py 的出站连接路径，重点查看 create_connection_via_tun()、setup_policy_routing() 和 SOCKS 目标地址解析逻辑。
+- 观察结果（事实）: 代码使用 getaddrinfo(host, port, 0, SOCK_STREAM) 会尝试 IPv4/IPv6；策略路由仅配置了 ip route + ip rule（IPv4），没有 ip -6 route/rule；DNS over tun 只解析 A 记录，遇到 IPv6-only 目标会落回系统解析并尝试 IPv6，随后可能触发 Errno 101。
+- 当时结论（解释）: 这是上游连通性问题，而不是 OpenVPN 建链或 SOCKS 鉴权问题。其中 IPv6 报错属于路由能力缺失，超时则是节点质量或目标可达性问题，通常通过强制 IPv4 或更换节点可缓解。
+- 证据等级（已验证 / 观察 / 猜想）: 已验证
+- 引出的下一步问题: 是否需要在脚本里默认禁用 IPv6 出站尝试（仅连 AF_INET），避免客户端访问 IPv6 域名时反复报错？
+- 下一步计划: 先给用户可执行的现场排查命令与临时规避方案；若用户确认，再提交最小补丁（优先 IPv4，保留可选 IPv6 扩展）。
+## N013
+- branch_id: B001
+- parent_node_ids: N012
+- relation_type: next
+- 当时问题: 这次报错是不是单纯因为服务器只有 IPv4？
+- 触发原因（为什么想到这个）: 用户看到大量 IPv6 目标连接失败，想确认是否是机器网络栈能力导致。
+- 当时假设: 机器只有 IPv4 会直接导致 IPv6 目标出现 Network is unreachable；但 timed out 还可能来自节点质量差或目标可达性差。
+- 采取动作（做了什么实验/改了什么）: 结合现有日志特征和脚本路由实现复核因果边界，区分 IPv6 报错与超时报错的来源。
+- 观察结果（事实）: IPv6 目标失败与主机/隧道缺少 IPv6 可达路径高度一致；脚本当前也未建立 IPv6 策略路由；而超时发生在可发起连接但迟迟无响应场景。
+- 当时结论（解释）: 是主要原因之一，而且对 Errno 101 基本可直接解释；但不能解释全部故障，timed out 仍需从节点质量和目标连通性角度排查。
+- 证据等级（已验证 / 观察 / 猜想）: 已验证
+- 引出的下一步问题: 是否要在脚本中默认只走 IPv4，避免客户端访问 IPv6 域名时频繁失败？
+- 下一步计划: 先建议用户按 IPv4-only 使用并规避 IPv6 测试域名；若确认，再提交最小补丁把上游连接限制为 AF_INET。
+## N014
+- branch_id: B001
+- parent_node_ids: N013
+- relation_type: next
+- 当时问题: 用户要求把当前代理代码改成只用 IPv4，避免 IPv6 目标触发连接失败。
+- 触发原因（为什么想到这个）: 前序诊断已确认 Errno 101 主要与 IPv6 不可达有关，用户希望直接从代码层面规避。
+- 当时假设: 将上游连接限制为 AF_INET，并在 SOCKS 请求里拒绝 IPv6 地址类型，可在不影响现有 IPv4 流量的前提下稳定规避该类报错。
+- 采取动作（做了什么实验/改了什么）: 在 create_connection_via_tun() 把 getaddrinfo 地址族改为 socket.AF_INET；在 handle_socks_client() 的 ATYP=4 分支直接返回 address type not supported。
+- 观察结果（事实）: 代码仅改动两处，语法检查通过（python -m py_compile vpngate_socks_auth.py）；目标文件保持 UTF-8 无 BOM 与 CRLF。
+- 当时结论（解释）: 当前实现已切换为 IPv4-only；域名请求将仅解析/连接 IPv4，客户端显式 IPv6 目标会被 SOCKS 端拒绝。
+- 证据等级（已验证 / 观察 / 猜想）: 已验证
+- 引出的下一步问题: 是否还需要同步在 README 明确标注“默认 IPv4-only 行为”，减少使用误解？
+- 下一步计划: 先让用户部署验证日志变化；若需要，再补最小文档说明与可选开关设计。
