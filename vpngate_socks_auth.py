@@ -100,6 +100,7 @@ VPN_ROUTE_TABLE = _env_int("VPN_ROUTE_TABLE", 100)
 OPENVPN_TEST_DEV = os.environ.get("OPENVPN_TEST_DEV", "tun").strip() or "tun"
 MAX_SCAN_ROWS = _env_int("MAX_SCAN_ROWS", 300)
 TEST_CANDIDATES = _env_int("TEST_CANDIDATES", 8)
+UPSTREAM_FAIL_RESTART_THRESHOLD = _env_int("UPSTREAM_FAIL_RESTART_THRESHOLD", 30)
 VPNGATE_RISK_ENABLE = _env_bool("VPNGATE_RISK_ENABLE", False)
 VPNGATE_RISK_BLOCK_QUALITY = set(_env_csv("VPNGATE_RISK_BLOCK_QUALITY", "proxy,datacenter"))
 VPNGATE_RISK_ASN_BLACKLIST_RAW = os.environ.get("VPNGATE_RISK_ASN_BLACKLIST", "")
@@ -123,8 +124,11 @@ AUTH_FILE = DATA_DIR / "vpngate_auth.txt"
 stop_event = threading.Event()
 openvpn_lock = threading.RLock()
 auth_lock = threading.Lock()
+upstream_fail_lock = threading.Lock()
+upstream_fail_restart_event = threading.Event()
 active_openvpn_process: subprocess.Popen[str] | None = None
 active_node: "Node | None" = None
+upstream_fail_count = 0
 libcrypt: ctypes.CDLL | None = None
 
 
@@ -169,6 +173,23 @@ class Node:
 
 def log(msg: str) -> None:
     print(time.strftime("[%Y-%m-%d %H:%M:%S]"), msg, flush=True)
+
+
+def record_upstream_failure() -> int:
+    if UPSTREAM_FAIL_RESTART_THRESHOLD <= 0:
+        return 0
+    global upstream_fail_count
+    with upstream_fail_lock:
+        upstream_fail_count += 1
+        return upstream_fail_count
+
+
+def record_upstream_success() -> None:
+    if UPSTREAM_FAIL_RESTART_THRESHOLD <= 0:
+        return
+    global upstream_fail_count
+    with upstream_fail_lock:
+        upstream_fail_count = 0
 
 
 def parse_int(value: Any) -> int:
@@ -900,9 +921,18 @@ def handle_socks_client(client: socket.socket, address: tuple[str, int]) -> None
             upstream = create_connection_via_tun(host, port, interface=VPN_TUN_DEV, timeout=20)
         except Exception as exc:
             log(f"Upstream connect failed {host}:{port}: {exc}")
+            fail_count = record_upstream_failure()
+            if fail_count >= UPSTREAM_FAIL_RESTART_THRESHOLD > 0:
+                if not upstream_fail_restart_event.is_set():
+                    log(
+                        "Upstream consecutive failures reached threshold "
+                        f"({fail_count}/{UPSTREAM_FAIL_RESTART_THRESHOLD}); requesting service restart."
+                    )
+                upstream_fail_restart_event.set()
             socks5_reply(client, 4)
             return
 
+        record_upstream_success()
         bind_host, bind_port = upstream.getsockname()[:2]
         socks5_reply(client, 0, str(bind_host), int(bind_port))
         relay(client, upstream)
@@ -934,6 +964,10 @@ def start_socks_server(host: str, port: int) -> None:
             if proc is None or proc.poll() is not None:
                 code = proc.poll() if proc is not None else None
                 raise RuntimeError(f"OpenVPN process exited unexpectedly (code={code}).")
+            if upstream_fail_restart_event.is_set():
+                raise RuntimeError(
+                    "Upstream connect failures reached threshold; restarting for node reselect."
+                )
             try:
                 client, addr = server.accept()
                 threading.Thread(target=handle_socks_client, args=(client, addr), daemon=True).start()
@@ -982,6 +1016,13 @@ def main() -> None:
     allowed = ",".join(SOCKS_ALLOWED_USERS) if SOCKS_ALLOWED_USERS else "(all system users)"
     log(f"SOCKS auth mode: system users (allowed users: {allowed})")
     log(f"Runtime network: tun={VPN_TUN_DEV}, route_table={VPN_ROUTE_TABLE}, test_dev={OPENVPN_TEST_DEV}")
+    if UPSTREAM_FAIL_RESTART_THRESHOLD > 0:
+        log(
+            "Upstream failover: restart on "
+            f"{UPSTREAM_FAIL_RESTART_THRESHOLD} consecutive upstream connect failures."
+        )
+    else:
+        log("Upstream failover: disabled (UPSTREAM_FAIL_RESTART_THRESHOLD <= 0).")
     if VPNGATE_COUNTRY or VPNGATE_COUNTRY_SHORT:
         log(f"VPNGate country filter: country={VPNGATE_COUNTRY or '-'}, country_short={VPNGATE_COUNTRY_SHORT or '-'}")
     if VPNGATE_RISK_ENABLE:
