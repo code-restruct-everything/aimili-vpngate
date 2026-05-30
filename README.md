@@ -210,6 +210,15 @@ sudo systemctl enable --now vpngate-socks-auth@jp
 sudo systemctl enable --now vpngate-socks-auth@us
 ```
 
+启动后如需应用配置或代码更新，可执行：
+
+```bash
+sudo systemctl restart vpngate-socks-auth@jp
+sudo systemctl restart vpngate-socks-auth@us
+sudo journalctl -u vpngate-socks-auth@jp -f
+sudo journalctl -u vpngate-socks-auth@us -f
+```
+
 每个实例建议使用不同的：
 
 1. `SOCKS_PORT`
