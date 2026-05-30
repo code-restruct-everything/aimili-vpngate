@@ -50,6 +50,31 @@ def _env_csv(name: str, default: str = "") -> tuple[str, ...]:
     return tuple(values)
 
 
+def _parse_host_port_list(raw: str, default: str) -> tuple[tuple[str, int], ...]:
+    def parse_items(source: str) -> list[tuple[str, int]]:
+        parsed: list[tuple[str, int]] = []
+        for item in (source or "").split(","):
+            token = item.strip()
+            if not token or ":" not in token:
+                continue
+            host, port_text = token.rsplit(":", 1)
+            host = host.strip()
+            if not host:
+                continue
+            try:
+                port = int(port_text.strip())
+            except ValueError:
+                continue
+            if 1 <= port <= 65535:
+                parsed.append((host, port))
+        return parsed
+
+    values = parse_items(raw)
+    if values:
+        return tuple(values)
+    return tuple(parse_items(default))
+
+
 def _parse_country_score_map(raw: str) -> dict[str, int]:
     score_map: dict[str, int] = {}
     for item in (raw or "").split(","):
@@ -100,7 +125,13 @@ VPN_ROUTE_TABLE = _env_int("VPN_ROUTE_TABLE", 100)
 OPENVPN_TEST_DEV = os.environ.get("OPENVPN_TEST_DEV", "tun").strip() or "tun"
 MAX_SCAN_ROWS = _env_int("MAX_SCAN_ROWS", 300)
 TEST_CANDIDATES = _env_int("TEST_CANDIDATES", 8)
-UPSTREAM_FAIL_RESTART_THRESHOLD = _env_int("UPSTREAM_FAIL_RESTART_THRESHOLD", 30)
+UPSTREAM_FAIL_RESTART_THRESHOLD = _env_int("UPSTREAM_FAIL_RESTART_THRESHOLD", 12)
+UPSTREAM_HEALTHCHECK_TARGETS = _parse_host_port_list(
+    os.environ.get("UPSTREAM_HEALTHCHECK_TARGETS", ""),
+    "www.google.com:443,www.cloudflare.com:443",
+)
+UPSTREAM_HEALTHCHECK_INTERVAL_SECONDS = max(3, _env_int("UPSTREAM_HEALTHCHECK_INTERVAL_SECONDS", 10))
+UPSTREAM_HEALTHCHECK_TIMEOUT_SECONDS = max(1, _env_int("UPSTREAM_HEALTHCHECK_TIMEOUT_SECONDS", 6))
 VPNGATE_RISK_ENABLE = _env_bool("VPNGATE_RISK_ENABLE", False)
 VPNGATE_RISK_BLOCK_QUALITY = set(_env_csv("VPNGATE_RISK_BLOCK_QUALITY", "proxy,datacenter"))
 VPNGATE_RISK_ASN_BLACKLIST_RAW = os.environ.get("VPNGATE_RISK_ASN_BLACKLIST", "")
@@ -190,6 +221,22 @@ def record_upstream_success() -> None:
     global upstream_fail_count
     with upstream_fail_lock:
         upstream_fail_count = 0
+
+
+def check_upstream_health_target(host: str, port: int) -> bool:
+    sock = None
+    try:
+        sock = create_connection_via_tun(host, port, interface=VPN_TUN_DEV, timeout=UPSTREAM_HEALTHCHECK_TIMEOUT_SECONDS)
+        return True
+    except Exception as exc:
+        log(f"Health check failed {host}:{port}: {exc}")
+        return False
+    finally:
+        if sock is not None:
+            try:
+                sock.close()
+            except OSError:
+                pass
 
 
 def parse_int(value: Any) -> int:
@@ -921,18 +968,9 @@ def handle_socks_client(client: socket.socket, address: tuple[str, int]) -> None
             upstream = create_connection_via_tun(host, port, interface=VPN_TUN_DEV, timeout=20)
         except Exception as exc:
             log(f"Upstream connect failed {host}:{port}: {exc}")
-            fail_count = record_upstream_failure()
-            if fail_count >= UPSTREAM_FAIL_RESTART_THRESHOLD > 0:
-                if not upstream_fail_restart_event.is_set():
-                    log(
-                        "Upstream consecutive failures reached threshold "
-                        f"({fail_count}/{UPSTREAM_FAIL_RESTART_THRESHOLD}); requesting service restart."
-                    )
-                upstream_fail_restart_event.set()
             socks5_reply(client, 4)
             return
 
-        record_upstream_success()
         bind_host, bind_port = upstream.getsockname()[:2]
         socks5_reply(client, 0, str(bind_host), int(bind_port))
         relay(client, upstream)
@@ -957,6 +995,8 @@ def start_socks_server(host: str, port: int) -> None:
     server.listen(256)
     server.settimeout(1.0)
     log(f"SOCKS5 server listening on {host}:{port} (auth enabled)")
+    health_index = 0
+    next_healthcheck_at = time.monotonic()
     try:
         while not stop_event.is_set():
             with openvpn_lock:
@@ -964,9 +1004,26 @@ def start_socks_server(host: str, port: int) -> None:
             if proc is None or proc.poll() is not None:
                 code = proc.poll() if proc is not None else None
                 raise RuntimeError(f"OpenVPN process exited unexpectedly (code={code}).")
+            if UPSTREAM_FAIL_RESTART_THRESHOLD > 0 and UPSTREAM_HEALTHCHECK_TARGETS:
+                now = time.monotonic()
+                if now >= next_healthcheck_at:
+                    target = UPSTREAM_HEALTHCHECK_TARGETS[health_index % len(UPSTREAM_HEALTHCHECK_TARGETS)]
+                    health_index += 1
+                    next_healthcheck_at = now + UPSTREAM_HEALTHCHECK_INTERVAL_SECONDS
+                    if check_upstream_health_target(target[0], target[1]):
+                        record_upstream_success()
+                    else:
+                        fail_count = record_upstream_failure()
+                        if fail_count >= UPSTREAM_FAIL_RESTART_THRESHOLD:
+                            if not upstream_fail_restart_event.is_set():
+                                log(
+                                    "Health check consecutive failures reached threshold "
+                                    f"({fail_count}/{UPSTREAM_FAIL_RESTART_THRESHOLD}); requesting service restart."
+                                )
+                            upstream_fail_restart_event.set()
             if upstream_fail_restart_event.is_set():
                 raise RuntimeError(
-                    "Upstream connect failures reached threshold; restarting for node reselect."
+                    "Health check failures reached threshold; restarting for node reselect."
                 )
             try:
                 client, addr = server.accept()
@@ -1017,9 +1074,12 @@ def main() -> None:
     log(f"SOCKS auth mode: system users (allowed users: {allowed})")
     log(f"Runtime network: tun={VPN_TUN_DEV}, route_table={VPN_ROUTE_TABLE}, test_dev={OPENVPN_TEST_DEV}")
     if UPSTREAM_FAIL_RESTART_THRESHOLD > 0:
+        targets_text = ",".join(f"{item[0]}:{item[1]}" for item in UPSTREAM_HEALTHCHECK_TARGETS) or "-"
         log(
             "Upstream failover: restart on "
-            f"{UPSTREAM_FAIL_RESTART_THRESHOLD} consecutive upstream connect failures."
+            f"{UPSTREAM_FAIL_RESTART_THRESHOLD} consecutive health-check failures "
+            f"(targets={targets_text}, interval={UPSTREAM_HEALTHCHECK_INTERVAL_SECONDS}s, "
+            f"timeout={UPSTREAM_HEALTHCHECK_TIMEOUT_SECONDS}s)."
         )
     else:
         log("Upstream failover: disabled (UPSTREAM_FAIL_RESTART_THRESHOLD <= 0).")
