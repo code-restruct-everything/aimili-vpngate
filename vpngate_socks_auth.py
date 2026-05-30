@@ -13,10 +13,12 @@ import re
 import select
 import shlex
 import signal
+import ssl
 import socket
 import subprocess
 import threading
 import time
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,6 +40,14 @@ def _env_bool(name: str, default: bool = False) -> bool:
     if raw is None:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name, str(default))
+    try:
+        return float((raw or "").strip())
+    except (TypeError, ValueError):
+        return default
 
 
 def _env_csv(name: str, default: str = "") -> tuple[str, ...]:
@@ -68,6 +78,38 @@ def _parse_host_port_list(raw: str, default: str) -> tuple[tuple[str, int], ...]
             if 1 <= port <= 65535:
                 parsed.append((host, port))
         return parsed
+
+    values = parse_items(raw)
+    if values:
+        return tuple(values)
+    return tuple(parse_items(default))
+
+
+def _parse_speed_test_url_list(raw: str, default: str) -> tuple[tuple[str, int, str, bool], ...]:
+    def parse_items(source: str) -> list[tuple[str, int, str, bool]]:
+        parsed_items: list[tuple[str, int, str, bool]] = []
+        for item in (source or "").split(","):
+            token = item.strip()
+            if not token:
+                continue
+            try:
+                parsed = urllib.parse.urlsplit(token)
+            except Exception:
+                continue
+            scheme = parsed.scheme.lower()
+            if scheme not in {"http", "https"}:
+                continue
+            host = (parsed.hostname or "").strip()
+            if not host:
+                continue
+            port = parsed.port or (443 if scheme == "https" else 80)
+            if not (1 <= port <= 65535):
+                continue
+            path = parsed.path or "/"
+            if parsed.query:
+                path = f"{path}?{parsed.query}"
+            parsed_items.append((host, port, path, scheme == "https"))
+        return parsed_items
 
     values = parse_items(raw)
     if values:
@@ -132,6 +174,15 @@ UPSTREAM_HEALTHCHECK_TARGETS = _parse_host_port_list(
 )
 UPSTREAM_HEALTHCHECK_INTERVAL_SECONDS = max(3, _env_int("UPSTREAM_HEALTHCHECK_INTERVAL_SECONDS", 10))
 UPSTREAM_HEALTHCHECK_TIMEOUT_SECONDS = max(1, _env_int("UPSTREAM_HEALTHCHECK_TIMEOUT_SECONDS", 6))
+VPNGATE_SPEED_TEST_ENABLE = _env_bool("VPNGATE_SPEED_TEST_ENABLE", True)
+VPNGATE_SPEED_TEST_TARGETS = _parse_speed_test_url_list(
+    os.environ.get("VPNGATE_SPEED_TEST_TARGETS", ""),
+    "https://speed.cloudflare.com/__down?bytes=262144",
+)
+VPNGATE_SPEED_TEST_TIMEOUT_SECONDS = max(2, _env_int("VPNGATE_SPEED_TEST_TIMEOUT_SECONDS", 8))
+VPNGATE_SPEED_TEST_MAX_BYTES = max(32768, _env_int("VPNGATE_SPEED_TEST_MAX_BYTES", 262144))
+VPNGATE_RANK_WEIGHT_LATENCY = max(0.0, _env_float("VPNGATE_RANK_WEIGHT_LATENCY", 0.6))
+VPNGATE_RANK_WEIGHT_SPEED = max(0.0, _env_float("VPNGATE_RANK_WEIGHT_SPEED", 0.4))
 VPNGATE_RISK_ENABLE = _env_bool("VPNGATE_RISK_ENABLE", False)
 VPNGATE_RISK_BLOCK_QUALITY = set(_env_csv("VPNGATE_RISK_BLOCK_QUALITY", "proxy,datacenter"))
 VPNGATE_RISK_ASN_BLACKLIST_RAW = os.environ.get("VPNGATE_RISK_ASN_BLACKLIST", "")
@@ -237,6 +288,78 @@ def check_upstream_health_target(host: str, port: int) -> bool:
                 sock.close()
             except OSError:
                 pass
+
+
+def build_test_dev_name(base_dev: str, index: int) -> str:
+    if base_dev not in {"tun", "tap"}:
+        return base_dev
+    candidate = f"{base_dev}probe{index + 1}"
+    return candidate[:15]
+
+
+def probe_download_speed_bps(interface: str, host: str, port: int, path: str, use_tls: bool) -> int:
+    conn = None
+    try:
+        conn = create_connection_via_tun(host, port, interface=interface, timeout=VPNGATE_SPEED_TEST_TIMEOUT_SECONDS)
+        if use_tls:
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            conn = context.wrap_socket(conn, server_hostname=host)
+        conn.settimeout(VPNGATE_SPEED_TEST_TIMEOUT_SECONDS)
+        request = (
+            f"GET {path} HTTP/1.1\r\n"
+            f"Host: {host}\r\n"
+            "User-Agent: vpngate-speed-probe/1.0\r\n"
+            "Accept: */*\r\n"
+            "Connection: close\r\n\r\n"
+        ).encode("ascii", errors="ignore")
+        conn.sendall(request)
+
+        started = time.time()
+        buffered = b""
+        header_done = False
+        body_bytes = 0
+        while body_bytes < VPNGATE_SPEED_TEST_MAX_BYTES:
+            chunk = conn.recv(65536)
+            if not chunk:
+                break
+            if not header_done:
+                buffered += chunk
+                split_at = buffered.find(b"\r\n\r\n")
+                if split_at < 0:
+                    if len(buffered) > 131072:
+                        return 0
+                    continue
+                header_done = True
+                body = buffered[split_at + 4 :]
+                body_bytes += len(body)
+                buffered = b""
+            else:
+                body_bytes += len(chunk)
+
+        elapsed = max(0.001, time.time() - started)
+        if body_bytes <= 0:
+            return 0
+        return int(body_bytes / elapsed)
+    except Exception:
+        return 0
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except OSError:
+                pass
+
+
+def probe_candidate_speed_bps(interface: str) -> int:
+    if not VPNGATE_SPEED_TEST_ENABLE or not VPNGATE_SPEED_TEST_TARGETS:
+        return 0
+    for host, port, path, use_tls in VPNGATE_SPEED_TEST_TARGETS:
+        speed_bps = probe_download_speed_bps(interface, host, port, path, use_tls)
+        if speed_bps > 0:
+            return speed_bps
+    return 0
 
 
 def parse_int(value: Any) -> int:
@@ -687,17 +810,30 @@ def connect_candidate(node: Node, dev: str, keep_alive: bool, timeout: int) -> t
 
 
 def pick_best_node(candidates: list[Node]) -> Node:
-    tested: list[tuple[Node, int]] = []
+    tested: list[tuple[Node, int, int]] = []
+    speed_probe_enabled = VPNGATE_SPEED_TEST_ENABLE and bool(VPNGATE_SPEED_TEST_TARGETS)
     for idx, node in enumerate(candidates[: max(1, TEST_CANDIDATES)]):
-        test_dev = OPENVPN_TEST_DEV
+        test_dev = build_test_dev_name(OPENVPN_TEST_DEV, idx) if speed_probe_enabled else OPENVPN_TEST_DEV
         log(f"Testing candidate {idx + 1}/{min(len(candidates), TEST_CANDIDATES)}: {node.id}")
         latency = vpn_utils.ping_latency_ms(node.ip or node.remote_host, node.remote_port, node.ping)
-        ok, msg, _ = connect_candidate(node, dev=test_dev, keep_alive=False, timeout=OPENVPN_TEST_TIMEOUT_SECONDS)
+        ok, msg, process = connect_candidate(
+            node,
+            dev=test_dev,
+            keep_alive=speed_probe_enabled,
+            timeout=OPENVPN_TEST_TIMEOUT_SECONDS,
+        )
         if ok:
-            tested.append((node, latency if latency > 0 else 999999))
-            log(f"Candidate available: {node.id} ({latency} ms)")
+            speed_bps = probe_candidate_speed_bps(test_dev) if speed_probe_enabled else 0
+            tested.append((node, latency if latency > 0 else 999999, speed_bps))
+            if speed_probe_enabled:
+                speed_kib = int(speed_bps / 1024) if speed_bps > 0 else 0
+                log(f"Candidate available: {node.id} ({latency} ms, speed {speed_kib} KiB/s)")
+            else:
+                log(f"Candidate available: {node.id} ({latency} ms)")
         else:
             log(f"Candidate unavailable: {node.id} ({msg})")
+        if process is not None:
+            stop_process(process)
         try:
             if node.config_file.exists():
                 node.config_file.unlink()
@@ -705,7 +841,37 @@ def pick_best_node(candidates: list[Node]) -> Node:
             pass
     if not tested:
         raise RuntimeError("No usable VPNGate node found after testing.")
-    tested.sort(key=lambda item: (item[1], -item[0].score))
+    if speed_probe_enabled:
+        latency_weight = VPNGATE_RANK_WEIGHT_LATENCY
+        speed_weight = VPNGATE_RANK_WEIGHT_SPEED
+        if latency_weight <= 0 and speed_weight <= 0:
+            latency_weight, speed_weight = 0.6, 0.4
+        weight_sum = latency_weight + speed_weight
+        latency_weight /= weight_sum
+        speed_weight /= weight_sum
+
+        latencies = [item[1] for item in tested]
+        speeds = [item[2] for item in tested]
+        min_latency, max_latency = min(latencies), max(latencies)
+        min_speed, max_speed = min(speeds), max(speeds)
+
+        ranked: list[tuple[float, Node, int, int]] = []
+        for node, latency, speed_bps in tested:
+            if max_latency == min_latency:
+                latency_cost = 0.0
+            else:
+                latency_cost = (latency - min_latency) / (max_latency - min_latency)
+            if max_speed == min_speed:
+                speed_cost = 0.0
+            else:
+                speed_cost = (max_speed - speed_bps) / (max_speed - min_speed)
+            weighted_cost = latency_weight * latency_cost + speed_weight * speed_cost
+            ranked.append((weighted_cost, node, latency, speed_bps))
+
+        ranked.sort(key=lambda item: (item[0], item[2], -item[3], -item[1].score))
+        return ranked[0][1]
+    else:
+        tested.sort(key=lambda item: (item[1], -item[0].score))
     return tested[0][0]
 
 
@@ -1073,6 +1239,18 @@ def main() -> None:
     allowed = ",".join(SOCKS_ALLOWED_USERS) if SOCKS_ALLOWED_USERS else "(all system users)"
     log(f"SOCKS auth mode: system users (allowed users: {allowed})")
     log(f"Runtime network: tun={VPN_TUN_DEV}, route_table={VPN_ROUTE_TABLE}, test_dev={OPENVPN_TEST_DEV}")
+    if VPNGATE_SPEED_TEST_ENABLE and VPNGATE_SPEED_TEST_TARGETS:
+        speed_targets = ",".join(
+            f"{'https' if use_tls else 'http'}://{host}:{port}{path}" for host, port, path, use_tls in VPNGATE_SPEED_TEST_TARGETS
+        )
+        log(
+            "Speed probe: enabled "
+            f"(targets={speed_targets}, timeout={VPNGATE_SPEED_TEST_TIMEOUT_SECONDS}s, "
+            f"max_bytes={VPNGATE_SPEED_TEST_MAX_BYTES}, "
+            f"rank_weights=latency:{VPNGATE_RANK_WEIGHT_LATENCY},speed:{VPNGATE_RANK_WEIGHT_SPEED})."
+        )
+    else:
+        log("Speed probe: disabled.")
     if UPSTREAM_FAIL_RESTART_THRESHOLD > 0:
         targets_text = ",".join(f"{item[0]}:{item[1]}" for item in UPSTREAM_HEALTHCHECK_TARGETS) or "-"
         log(
