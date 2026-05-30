@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/aimilivpn
-ExecStart=/usr/bin/python3 /opt/aimilivpn/vpngate_socks_auth.py
+WorkingDirectory=/root/aimili-vpngate
+ExecStart=/usr/bin/python3 /root/aimili-vpngate/vpngate_socks_auth.py
 Environment=PYTHONUNBUFFERED=1
 EnvironmentFile=-/etc/default/vpngate-socks-auth
 EnvironmentFile=-/etc/default/vpngate-socks-auth-%i
