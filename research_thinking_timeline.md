@@ -377,3 +377,16 @@
 - 证据等级（已验证 / 观察 / 猜想）: 已验证
 - 引出的下一步问题: 是否需要把默认权重同步到 systemd default 示例文件，避免线上实例忘记配置导致行为不一致？
 - 下一步计划: 先用默认 0.6/0.4 观察体验；若速度仍偏慢，再把速度权重提高到 0.5~0.6。
+## N030
+- branch_id: B001
+- parent_node_ids: N029
+- relation_type: next
+- 当时问题: 用户贴出新的 OpenVPN 启动日志，出现 PUSH-OPTIONS 的 Options error，担心这会不会导致当前代理不可用或不稳定。
+- 触发原因（为什么想到这个）: 日志同时包含 Options error 与 Initialization Sequence Completed，表象看起来矛盾，容易误判为连接异常。
+- 当时假设: 这些错误主要是被脚本策略（route_nopull / 策略路由接管）主动屏蔽的服务端推送项，属于可接受告警，不是建链失败根因。
+- 采取动作（做了什么实验/改了什么）: 对日志关键序列做判读：TCP/TLS 建链、PUSH_REPLY、Options error、tun 设备就绪、Initialization completed；并对照脚本已接管路由与出站绑定的设计边界。
+- 观察结果（事实）: 日志明确显示 TLS 校验通过、tun10 配置完成且 Initialization Sequence Completed；Options error 仅指推送的 dhcp-option/redirect-gateway 在当前上下文被忽略。
+- 当时结论（解释）: 这批日志整体是“连接成功 + 部分推送项被忽略”的正常状态，不是故障本身；真正影响可用性的仍是节点质量、目标可达性和业务流量特征。
+- 证据等级（已验证 / 观察 / 猜想）: 已验证
+- 引出的下一步问题: 是否需要把这类已知可忽略告警降噪（日志级别或关键词过滤），避免运维误报警？
+- 下一步计划: 先向用户确认当前关注点是“这段日志是否正常”；若需要，再补最小日志降噪策略建议。
