@@ -163,7 +163,7 @@ sudo apt-get update
 ### 单代理（直接运行）
 
 ```bash
-cd /opt/aimilivpn
+cd /root/aimili-vpngate
 export SOCKS_HOST=0.0.0.0
 export SOCKS_PORT=1080
 export SOCKS_ALLOWED_USERS=worker
