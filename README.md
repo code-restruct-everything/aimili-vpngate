@@ -1,6 +1,6 @@
 # AimiliVPN 🌐
 
-Bilingual: [中文](#中文) | [English](#english)
+文档语言：中文
 
 ---
 
@@ -93,96 +93,31 @@ sudo apt-get update
 
 ---
 
-## English
+## 功能亮点
 
-[![Telegram](https://img.shields.io/badge/Telegram-arestemple-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/arestemple)
-[![Forum](https://img.shields.io/badge/Forum-339936.xyz-orange?style=flat-square&logo=discourse&logoColor=white)](https://339936.xyz)
-[![Email](https://img.shields.io/badge/Bug%20Report-yaohunse7@gmail.com-red?style=flat-square&logo=gmail&logoColor=white)](mailto:yaohunse7@gmail.com)
+### ✨ 主要特性
 
----
-
-**AimiliVPN** is an intelligent VPN proxy gateway manager designed specifically for Linux VPS (e.g. Ubuntu). It automatically collects open VPNGate nodes, conducts multi-threaded availability testing and latency filtering, establishes secure out-of-band routing via OpenVPN and policy routing to **prevent VPS lockouts**, and hosts a high-performance local SOCKS5/HTTP proxy gateway. It is highly optimized to serve as a residential/unlocked egress node for upstream proxies like 3x-ui / Xray.
-
-### ✨ Key Features
-
-1. ⚡ **Auto-Collection & Multi-Threaded Probing**:
-   * Periodically fetches candidate nodes from VPNGate.
-   * Performs concurrent ping latency and handshake tests to maintain a pool of high-quality nodes.
-2. 🔒 **Anti-Lockout Routing (Policy Routing)**:
-   * Directs traffic from the virtual adapter `tun0` to a customized routing table (Table 100) without altering the system's default gateway.
-   * Keeps SSH sessions and server administration panels unaffected by the active VPN.
-3. 🚫 **Fail-Safe Leak Protection**:
-   * Outbound socket connections inside the local proxy server are strictly bound to `tun0` via `SO_BINDTODEVICE`.
-   * If the VPN disconnects, proxy requests are instantly blocked with a `502 Bad Gateway` instead of falling back to the VPS physical IP address.
-4. 🖥️ **Modern Web UI Panel**:
-   * Sleek dark/light responsive console (default port `8787`).
-   * Provides real-time geolocation, ISP, ASN, latency, and IP-type (residential/datacenter) detection.
-   * Enables manual node selection, blacklist resets, proxy speed-testing, and logs query.
-   * Secured by a random secret path suffix (e.g., `/EJsW2EeBo9lY/`) and password authentication.
-5. 🛠️ **CLI Utility (ml)**:
-   * Command-line helper tool `ml` with a menu-driven interface.
-   * Provides quick statuses, starts/stops the daemon, resets passwords, and changes bind hosts.
+1. ⚡ **自动采集与多线程探测**
+   * 周期性从 VPNGate 拉取候选节点。
+   * 并发执行延迟与握手测试，维护高质量节点池。
+2. 🔒 **防失联策略路由（Policy Routing）**
+   * 将虚拟网卡 `tun0` 的流量导向自定义路由表（Table 100），不修改系统默认网关。
+   * VPN 切换时不会影响 SSH 会话与服务器管理面板访问。
+3. 🚫 **失效即阻断，防止出口泄露**
+   * 本地代理服务的出站连接通过 `SO_BINDTODEVICE` 强制绑定到 `tun0`。
+   * 一旦 VPN 断开，代理请求会立即返回 `502 Bad Gateway`，不会回落到 VPS 物理公网 IP。
+4. 🖥️ **现代化 Web 控制台**
+   * 支持深浅色切换的响应式界面（默认端口 `8787`）。
+   * 可实时查看地理位置、ISP、ASN、延迟、IP 类型（住宅/机房）。
+   * 支持手动切换节点、重置黑名单、代理测速、日志查询。
+   * 通过随机安全路径后缀（如 `/EJsW2EeBo9lY/`）+ 密码认证进行保护。
+5. 🛠️ **CLI 工具（`ml`）**
+   * 提供菜单式命令行管理入口。
+   * 支持快捷查看状态、启停服务、重置密码、修改绑定地址等操作。
 
 ---
 
-### 🚀 Quick Start
-
-To install and deploy AimiliVPN on your **Ubuntu** server, copy and paste the following command:
-
-```bash
-bash <(curl -Ls https://raw.githubusercontent.com/baoweise-bot/aimili-vpngate/main/install.sh)
-```
-
----
-
-### 🛠️ CLI Helper Commands
-
-Once installed, use the global command `ml` to launch the interactive helper menu, or use the shortcuts below:
-* **`ml status`** or **`ml`**: Check running system status (active nodes, proxy ports, latency, URLs).
-* **`ml start`**: Start the gateway service.
-* **`ml stop`**: Stop the gateway service (and clean routing tables).
-* **`ml restart`**: Restart the service.
-* **`ml logs`**: View real-time Systemd output logs.
-* **`ml web`**: Toggle Web UI accessibility (127.0.0.1 or 0.0.0.0) and reset suffix paths.
-* **`ml port`**: Update the Web Console port.
-* **`ml password`**: Regenerate a secure 12-character administration password.
-* **`ml uninstall`**: Completely remove the service and repository files from your VPS.
-
-#### 💡 Troubleshooting & First-Time Installation Tips
-
-##### 1. Missing Dependencies on Minimal OS (Ubuntu / Debian)
-If you are using a brand new minimal OS, the installation might fail due to missing `curl` or `ca-certificates`. Run the following command to pre-install dependencies:
-```bash
-sudo apt-get update && sudo apt-get install -y curl ca-certificates
-```
-
-##### 2. Bypass OS Restrictions for Debian
-The script is restricted to Ubuntu by default. For Debian systems, run the following commands to download, patch, and install:
-```bash
-curl -Ls https://raw.githubusercontent.com/baoweise-bot/aimili-vpngate/main/install.sh -o install.sh
-sed -i 's/"${ID:-}"/"ubuntu"/g' install.sh
-sudo bash install.sh
-```
-
-##### 3. Package Manager Locked (`apt`/`dpkg` Lock Errors)
-If you see `Could not get lock /var/lib/dpkg/lock-frontend` or similar busy errors, run these commands to unlock and retry:
-```bash
-# 1. Stop automatic upgrades & kill active processes
-sudo systemctl stop unattended-upgrades 2>/dev/null
-sudo killall apt apt-get dpkg 2>/dev/null
-
-# 2. Remove lock files
-sudo rm -f /var/lib/dpkg/lock* /var/lib/apt/lists/lock /var/cache/apt/archives/lock
-
-# 3. Repair package states & update
-sudo dpkg --configure -a
-sudo apt-get update
-```
-Once done, re-run the installation script.
-
----
-
-## `vpngate_socks_auth.py` Usage (Single and Multi Proxy)
+## `vpngate_socks_auth.py` 使用说明（单代理与多代理）
 
 ### 中文速览
 
@@ -192,40 +127,40 @@ Once done, re-run the installation script.
 4. 国家筛选可用 `VPNGATE_COUNTRY` 或 `VPNGATE_COUNTRY_SHORT`（例如 `JP`、`US`）。
 5. SOCKS5 用户名密码来自系统用户（`/etc/shadow` 校验），可用 `SOCKS_ALLOWED_USERS` 限制账号白名单。
 
-This script is a standalone SOCKS5 gateway:
+该脚本是一个独立的 SOCKS5 网关：
 
-1. Pulls VPNGate candidates and probes the best available node.
-2. Connects OpenVPN on Linux (`tun` device).
-3. Exposes a local SOCKS5 proxy with username/password authentication based on Linux system users.
-4. Forces upstream traffic to the VPN interface via policy routing and `SO_BINDTODEVICE` (to reduce egress IP leak risk).
+1. 从 VPNGate 拉取候选节点并探测出可用的最优节点。
+2. 在 Linux 上启动 OpenVPN（`tun` 设备）。
+3. 提供基于 Linux 系统用户账号密码认证的本地 SOCKS5 代理。
+4. 通过策略路由和 `SO_BINDTODEVICE` 强制流量走 VPN 接口，降低出口 IP 泄露风险。
 
-### Requirements
+### 运行要求
 
-1. Linux host (Ubuntu/Debian recommended).
-2. `python3`, `openvpn`, `iproute2`.
-3. Root privileges are required (`/etc/shadow` auth check + tun/routing operations).
+1. Linux 主机（推荐 Ubuntu / Debian）。
+2. 依赖：`python3`、`openvpn`、`iproute2`。
+3. 需要 root 权限（涉及 `/etc/shadow` 认证校验与 tun/路由操作）。
 
-### Environment Variables
+### 环境变量
 
-Common:
+通用参数：
 
-1. `SOCKS_HOST` default `0.0.0.0`
-2. `SOCKS_PORT` default `7928`
-3. `SOCKS_ALLOWED_USERS` default empty (allow all system users); example: `worker` or `worker,alice`
-4. `TEST_CANDIDATES` default `8`
-5. `MAX_SCAN_ROWS` default `300`
-6. `OPENVPN_TEST_TIMEOUT_SECONDS` default `15`
-7. `OPENVPN_AUTH_USER`/`OPENVPN_AUTH_PASS` default `vpn`/`vpn` (VPNGate public default)
-8. `VPNGATE_COUNTRY` optional full country name (e.g. `Japan`)
-9. `VPNGATE_COUNTRY_SHORT` optional ISO short name (e.g. `JP`)
+1. `SOCKS_HOST` 默认 `0.0.0.0`
+2. `SOCKS_PORT` 默认 `7928`
+3. `SOCKS_ALLOWED_USERS` 默认空（允许所有系统用户）；示例：`worker` 或 `worker,alice`
+4. `TEST_CANDIDATES` 默认 `8`
+5. `MAX_SCAN_ROWS` 默认 `300`
+6. `OPENVPN_TEST_TIMEOUT_SECONDS` 默认 `15`
+7. `OPENVPN_AUTH_USER`/`OPENVPN_AUTH_PASS` 默认 `vpn`/`vpn`（VPNGate 公共默认账号）
+8. `VPNGATE_COUNTRY` 可选，国家全称（例如 `Japan`）
+9. `VPNGATE_COUNTRY_SHORT` 可选，国家简称（例如 `JP`）
 
-Multi-instance critical (must be unique per instance):
+多实例关键参数（每个实例必须唯一）：
 
-1. `VPN_TUN_DEV` default `tun0` (examples: `tun10`, `tun11`)
-2. `VPN_ROUTE_TABLE` default `100` (examples: `110`, `111`)
-3. `VPNGATE_DATA_DIR` should be separated per instance (for example `/var/lib/vpngate-socks-auth/jp`)
+1. `VPN_TUN_DEV` 默认 `tun0`（示例：`tun10`、`tun11`）
+2. `VPN_ROUTE_TABLE` 默认 `100`（示例：`110`、`111`）
+3. `VPNGATE_DATA_DIR` 每个实例应独立目录（例如 `/var/lib/vpngate-socks-auth/jp`）
 
-### Single Proxy (Direct Run)
+### 单代理（直接运行）
 
 ```bash
 cd /opt/aimilivpn
@@ -239,9 +174,9 @@ export VPNGATE_DATA_DIR=/var/lib/vpngate-socks-auth/jp
 sudo -E python3 vpngate_socks_auth.py
 ```
 
-### Single Proxy (systemd Service)
+### 单代理（systemd 服务）
 
-Use the fixed-name service:
+使用固定名称的 service 文件：
 
 1. `deploy/systemd/vpngate-socks-auth.service`
 2. `deploy/systemd/vpngate-socks-auth.default`
@@ -254,13 +189,13 @@ sudo systemctl enable --now vpngate-socks-auth
 sudo systemctl status vpngate-socks-auth
 ```
 
-### Multi Proxy (systemd `@` Instances)
+### 多代理（systemd `@` 实例）
 
-Use the template service:
+使用模板 service 文件：
 
 1. `deploy/systemd/vpngate-socks-auth@.service`
-2. Global defaults: `deploy/systemd/vpngate-socks-auth.default`
-3. Instance examples:
+2. 全局默认配置：`deploy/systemd/vpngate-socks-auth.default`
+3. 实例示例：
    `deploy/systemd/vpngate-socks-auth-jp.default.example`
    `deploy/systemd/vpngate-socks-auth-us.default.example`
 
@@ -275,15 +210,15 @@ sudo systemctl enable --now vpngate-socks-auth@jp
 sudo systemctl enable --now vpngate-socks-auth@us
 ```
 
-Each instance should use different:
+每个实例建议使用不同的：
 
 1. `SOCKS_PORT`
-2. `VPNGATE_COUNTRY` or `VPNGATE_COUNTRY_SHORT`
+2. `VPNGATE_COUNTRY` 或 `VPNGATE_COUNTRY_SHORT`
 3. `VPN_TUN_DEV`
 4. `VPN_ROUTE_TABLE`
 5. `VPNGATE_DATA_DIR`
 
-### Check / Verify
+### 检查与验证
 
 ```bash
 sudo systemctl status vpngate-socks-auth@jp
@@ -293,15 +228,15 @@ sudo journalctl -u vpngate-socks-auth@us -f
 ss -lntp | grep -E '1080|1081'
 ```
 
-Test proxy authentication:
+测试代理认证：
 
 ```bash
 curl --proxy socks5h://worker:YOUR_PASSWORD@127.0.0.1:1080 https://api.ipify.org
 ```
 
-### Authentication Notes
+### 认证说明
 
-1. Auth source is Linux system users (`/etc/shadow` hash verification).
-2. Empty `SOCKS_ALLOWED_USERS` means any valid local user can authenticate.
-3. Set `SOCKS_ALLOWED_USERS=worker` if you want only `worker` to use the proxy.
-4. No plaintext proxy password is stored in this script; it checks against system user passwords.
+1. 认证来源是 Linux 系统用户（`/etc/shadow` 哈希校验）。
+2. `SOCKS_ALLOWED_USERS` 为空时，任意有效系统用户都可认证使用。
+3. 若只允许 `worker` 使用，请设置 `SOCKS_ALLOWED_USERS=worker`。
+4. 脚本不会保存明文代理密码，只会与系统用户密码哈希进行比对。
