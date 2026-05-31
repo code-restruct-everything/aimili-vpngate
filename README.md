@@ -198,16 +198,19 @@ sudo systemctl status vpngate-socks-auth
 3. 实例示例：
    `deploy/systemd/vpngate-socks-auth-jp.default.example`
    `deploy/systemd/vpngate-socks-auth-us.default.example`
+   `deploy/systemd/vpngate-socks-auth-kr.default.example`
 
 ```bash
 sudo cp deploy/systemd/vpngate-socks-auth@.service /etc/systemd/system/
 sudo cp deploy/systemd/vpngate-socks-auth.default /etc/default/vpngate-socks-auth
 sudo cp deploy/systemd/vpngate-socks-auth-jp.default.example /etc/default/vpngate-socks-auth-jp
 sudo cp deploy/systemd/vpngate-socks-auth-us.default.example /etc/default/vpngate-socks-auth-us
+sudo cp deploy/systemd/vpngate-socks-auth-kr.default.example /etc/default/vpngate-socks-auth-kr
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now vpngate-socks-auth@jp
 sudo systemctl enable --now vpngate-socks-auth@us
+sudo systemctl enable --now vpngate-socks-auth@kr
 ```
 
 启动后如需应用配置或代码更新，可执行：
@@ -215,8 +218,10 @@ sudo systemctl enable --now vpngate-socks-auth@us
 ```bash
 sudo systemctl restart vpngate-socks-auth@jp
 sudo systemctl restart vpngate-socks-auth@us
+sudo systemctl restart vpngate-socks-auth@kr
 sudo journalctl -u vpngate-socks-auth@jp -f
 sudo journalctl -u vpngate-socks-auth@us -f
+sudo journalctl -u vpngate-socks-auth@kr -f
 ```
 
 每个实例建议使用不同的：
@@ -232,9 +237,11 @@ sudo journalctl -u vpngate-socks-auth@us -f
 ```bash
 sudo systemctl status vpngate-socks-auth@jp
 sudo systemctl status vpngate-socks-auth@us
+sudo systemctl status vpngate-socks-auth@kr
 sudo journalctl -u vpngate-socks-auth@jp -f
 sudo journalctl -u vpngate-socks-auth@us -f
-ss -lntp | grep -E '1080|1081'
+sudo journalctl -u vpngate-socks-auth@kr -f
+ss -lntp | grep -E '1080|1081|1082'
 ```
 
 测试代理认证：

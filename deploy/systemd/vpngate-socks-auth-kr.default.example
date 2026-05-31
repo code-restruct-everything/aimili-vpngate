@@ -1,0 +1,42 @@
+# /etc/default/vpngate-socks-auth-kr
+# Used by: systemctl start vpngate-socks-auth@kr
+
+# SOCKS endpoint
+SOCKS_HOST=0.0.0.0
+SOCKS_PORT=1082
+
+# Auth policy (empty = allow all local system users; set to worker to restrict)
+SOCKS_ALLOWED_USERS=
+
+# Force KR nodes
+VPNGATE_COUNTRY=
+VPNGATE_COUNTRY_SHORT=KR
+
+# Risk filters (recommended for proxy-gateway scenarios)
+VPNGATE_RISK_ENABLE=1
+VPNGATE_RISK_BLOCK_QUALITY=proxy,datacenter
+VPNGATE_RISK_ASN_BLACKLIST=
+VPNGATE_RISK_GEOIP_THRESHOLD=70
+VPNGATE_RISK_COUNTRY_SCORES=
+VPNGATE_RISK_PROXY_SCORE=80
+VPNGATE_RISK_DATACENTER_SCORE=60
+VPNGATE_RISK_MOBILE_SCORE=20
+VPNGATE_RISK_FAIL_OPEN=1
+
+# Instance-unique network params (must not conflict with other instances)
+VPN_TUN_DEV=tun12
+VPN_ROUTE_TABLE=112
+OPENVPN_TEST_DEV=tun
+
+# Keep runtime files separate per instance to avoid collisions
+VPNGATE_DATA_DIR=/var/lib/vpngate-socks-auth/kr
+
+# Scan/probe tuning
+MAX_SCAN_ROWS=300
+TEST_CANDIDATES=8
+OPENVPN_TEST_TIMEOUT_SECONDS=15
+
+# OpenVPN credentials used by VPNGate public nodes
+OPENVPN_CMD=openvpn
+OPENVPN_AUTH_USER=vpn
+OPENVPN_AUTH_PASS=vpn
