@@ -1,0 +1,29 @@
+# Fly.io 部署配置文件
+# 注意：app 名字在全球必须是唯一的，请将其修改为您的专属名字（如 sydney-ss-yourname）
+app = "sydney-ss-unique-name"
+primary_region = "syd"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# 配置 Shadowsocks TCP 服务
+[[services]]
+  internal_port = 8388
+  protocol = "tcp"
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 8388
+
+# 配置 Shadowsocks UDP 服务
+[[services]]
+  internal_port = 8388
+  protocol = "udp"
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 8388
