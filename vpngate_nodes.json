@@ -1,0 +1,982 @@
+[
+  {
+    "ip": "219.100.37.197",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 2967325,
+    "ping": 18,
+    "speed": 128412061,
+    "uptime": 682583210,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.209",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 2893023,
+    "ping": 10,
+    "speed": 261896435,
+    "uptime": 682567389,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.210",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 2886689,
+    "ping": 18,
+    "speed": 463278722,
+    "uptime": 682580013,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.165",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 2861157,
+    "ping": 16,
+    "speed": 183610119,
+    "uptime": 682555127,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.87",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 2699695,
+    "ping": 13,
+    "speed": 86756057,
+    "uptime": 682544082,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.167",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 2686241,
+    "ping": 15,
+    "speed": 170172133,
+    "uptime": 682569715,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.28",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 2274143,
+    "ping": 10,
+    "speed": 156800876,
+    "uptime": 682564186,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.111",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 2070048,
+    "ping": 24,
+    "speed": 165208041,
+    "uptime": 682538319,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.25",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1867104,
+    "ping": 9,
+    "speed": 145908023,
+    "uptime": 682572413,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.205",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1670869,
+    "ping": 20,
+    "speed": 148298905,
+    "uptime": 682545088,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "104.28.156.52",
+    "country_long": "United States",
+    "country_short": "US",
+    "score": 1670306,
+    "ping": 12,
+    "speed": 25912976,
+    "uptime": 1000,
+    "operator": "DESKTOP-TMSQU1G's owner"
+  },
+  {
+    "ip": "219.100.37.207",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1658327,
+    "ping": 23,
+    "speed": 147484994,
+    "uptime": 682525534,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "219.100.37.161",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1562137,
+    "ping": 17,
+    "speed": 424002529,
+    "uptime": 682542114,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "111.238.189.171",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1542960,
+    "ping": 4,
+    "speed": 63824257,
+    "uptime": 7768533332,
+    "operator": "DESKTOP-QJBUID1's owner"
+  },
+  {
+    "ip": "131.147.203.90",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1530000,
+    "ping": 2,
+    "speed": 938794552,
+    "uptime": 2671255332,
+    "operator": "DESKTOP-5KLR4QN's owner"
+  },
+  {
+    "ip": "219.100.37.27",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1514146,
+    "ping": 18,
+    "speed": 178618890,
+    "uptime": 682520570,
+    "operator": "Daiyuu Nobori_ Japan. Academic Use Only."
+  },
+  {
+    "ip": "121.187.145.64",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 1440012,
+    "ping": 32,
+    "speed": 74617355,
+    "uptime": 7768533332,
+    "operator": "DESKTOP-S9H784I's owner"
+  },
+  {
+    "ip": "118.106.208.148",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1431226,
+    "ping": 9,
+    "speed": 318755939,
+    "uptime": 2922929332,
+    "operator": "DESKTOP-8K61FLS's owner"
+  },
+  {
+    "ip": "183.91.4.152",
+    "country_long": "Viet Nam",
+    "country_short": "VN",
+    "score": 1418099,
+    "ping": 41,
+    "speed": 65366740,
+    "uptime": 6139997332,
+    "operator": "DESKTOP-RIGK9M4's owner"
+  },
+  {
+    "ip": "175.210.118.154",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 1379258,
+    "ping": 29,
+    "speed": 70843895,
+    "uptime": 5597350332,
+    "operator": "DESKTOP-TAJ86DQ's owner"
+  },
+  {
+    "ip": "122.36.8.16",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 1376799,
+    "ping": 44,
+    "speed": 76187070,
+    "uptime": 1119519332,
+    "operator": "DESKTOP-F0AB0IT's owner"
+  },
+  {
+    "ip": "217.138.212.62",
+    "country_long": "Romania",
+    "country_short": "RO",
+    "score": 1354530,
+    "ping": 3,
+    "speed": 457260156,
+    "uptime": 517703332,
+    "operator": "Japan VPN"
+  },
+  {
+    "ip": "153.134.150.194",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1317216,
+    "ping": 4,
+    "speed": 191006092,
+    "uptime": 504000332,
+    "operator": "DP-akatsuki's owner"
+  },
+  {
+    "ip": "174.160.187.93",
+    "country_long": "United States",
+    "country_short": "US",
+    "score": 1253047,
+    "ping": 13,
+    "speed": 12557088,
+    "uptime": 1000,
+    "operator": "Profile1-PC's owner"
+  },
+  {
+    "ip": "14.36.15.22",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 1145498,
+    "ping": 31,
+    "speed": 81821572,
+    "uptime": 404865332,
+    "operator": "DESKTOP-KU8VJQP's owner"
+  },
+  {
+    "ip": "126.159.87.12",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1122573,
+    "ping": 21,
+    "speed": 66638201,
+    "uptime": 330077332,
+    "operator": "nakamura-PC2's owner"
+  },
+  {
+    "ip": "218.151.48.166",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 1108111,
+    "ping": 32,
+    "speed": 41466155,
+    "uptime": 425569332,
+    "operator": "메인컴퓨터's owner"
+  },
+  {
+    "ip": "49.49.224.87",
+    "country_long": "Thailand",
+    "country_short": "TH",
+    "score": 1105804,
+    "ping": 18,
+    "speed": 503820958,
+    "uptime": 330077332,
+    "operator": "DESKTOP-30J76U0's owner"
+  },
+  {
+    "ip": "221.158.213.241",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 1084350,
+    "ping": 57,
+    "speed": 13168334,
+    "uptime": 4397649332,
+    "operator": "DESKTOP-0RC7FKS's owner"
+  },
+  {
+    "ip": "219.75.211.89",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1064287,
+    "ping": 3,
+    "speed": 88942712,
+    "uptime": 330077332,
+    "operator": "DESKTOP-CF3LLUD's owner"
+  },
+  {
+    "ip": "42.127.109.131",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1026938,
+    "ping": 12,
+    "speed": 12194988,
+    "uptime": 425569332,
+    "operator": "DESKTOP-POQD8A4's owner"
+  },
+  {
+    "ip": "126.221.40.75",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 1006666,
+    "ping": 7,
+    "speed": 75855003,
+    "uptime": 264699332,
+    "operator": "DESKTOP-NH61839's owner"
+  },
+  {
+    "ip": "110.163.147.10",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 934497,
+    "ping": 8,
+    "speed": 190079379,
+    "uptime": 237234332,
+    "operator": "DNCServers"
+  },
+  {
+    "ip": "115.179.206.241",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 926452,
+    "ping": 14,
+    "speed": 167,
+    "uptime": 1526063332,
+    "operator": "Japan VPN"
+  },
+  {
+    "ip": "118.240.49.38",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 912094,
+    "ping": 3,
+    "speed": 401026702,
+    "uptime": 177546332,
+    "operator": "desk's owner"
+  },
+  {
+    "ip": "184.82.89.119",
+    "country_long": "Thailand",
+    "country_short": "TH",
+    "score": 909694,
+    "ping": 14,
+    "speed": 403093644,
+    "uptime": 164019332,
+    "operator": "DESKTOP-E4Q4FNM's owner"
+  },
+  {
+    "ip": "106.161.41.4",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 905990,
+    "ping": 2,
+    "speed": 2337849481,
+    "uptime": 177546332,
+    "operator": "4z's owner"
+  },
+  {
+    "ip": "176.49.126.17",
+    "country_long": "Russian Federation",
+    "country_short": "RU",
+    "score": 851791,
+    "ping": 81,
+    "speed": 86220400,
+    "uptime": 264699332,
+    "operator": "DESKTOP-L8G3EOT's owner"
+  },
+  {
+    "ip": "60.149.114.11",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 841261,
+    "ping": 13,
+    "speed": 80131203,
+    "uptime": 149651332,
+    "operator": "きっくお's owner"
+  },
+  {
+    "ip": "220.102.233.254",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 809188,
+    "ping": 6,
+    "speed": 85732889,
+    "uptime": 149651332,
+    "operator": "tanuki01's owner"
+  },
+  {
+    "ip": "175.202.137.198",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 779511,
+    "ping": 34,
+    "speed": 99565652,
+    "uptime": 177546332,
+    "operator": "익퓨터's owner"
+  },
+  {
+    "ip": "58.136.108.20",
+    "country_long": "Thailand",
+    "country_short": "TH",
+    "score": 778612,
+    "ping": 14,
+    "speed": 685322032,
+    "uptime": 75665332,
+    "operator": "PC-Apple's owner"
+  },
+  {
+    "ip": "175.208.46.223",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 766773,
+    "ping": 31,
+    "speed": 244127217,
+    "uptime": 149651332,
+    "operator": "DESKTOP-6MGC1KD's owner"
+  },
+  {
+    "ip": "210.94.76.219",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 764099,
+    "ping": 33,
+    "speed": 96125844,
+    "uptime": 164019332,
+    "operator": "DESKTOP-PV1ORAG's owner"
+  },
+  {
+    "ip": "95.154.70.26",
+    "country_long": "Russian Federation",
+    "country_short": "RU",
+    "score": 758478,
+    "ping": 128,
+    "speed": 145609975,
+    "uptime": 251270332,
+    "operator": "Pavel-PC2's owner"
+  },
+  {
+    "ip": "153.169.26.18",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 752058,
+    "ping": 6,
+    "speed": 91771075,
+    "uptime": 75665332,
+    "operator": "DESKTOP-RUPB38E's owner"
+  },
+  {
+    "ip": "112.133.179.107",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 751332,
+    "ping": 40,
+    "speed": 52498420,
+    "uptime": 164019332,
+    "operator": "Kua's owner"
+  },
+  {
+    "ip": "124.18.151.84",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 729808,
+    "ping": 8,
+    "speed": 717394952,
+    "uptime": 75665332,
+    "operator": "DESKTOP-J2N31ML's owner"
+  },
+  {
+    "ip": "125.14.139.20",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 724260,
+    "ping": 17,
+    "speed": 684450176,
+    "uptime": 75665332,
+    "operator": "DESKTOP-3O4DONH's owner"
+  },
+  {
+    "ip": "125.130.3.89",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 687271,
+    "ping": 29,
+    "speed": 419341832,
+    "uptime": 75665332,
+    "operator": "DESKTOP-U6MEUSL's owner"
+  },
+  {
+    "ip": "184.65.140.154",
+    "country_long": "Canada",
+    "country_short": "CA",
+    "score": 687180,
+    "ping": 19,
+    "speed": 581669104,
+    "uptime": 1000,
+    "operator": "DESKTOP-KAMUAK6's owner"
+  },
+  {
+    "ip": "39.118.146.136",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 682793,
+    "ping": 29,
+    "speed": 82536180,
+    "uptime": 75665332,
+    "operator": "DESKTOP-BA9PFIS's owner"
+  },
+  {
+    "ip": "171.6.142.39",
+    "country_long": "Thailand",
+    "country_short": "TH",
+    "score": 663043,
+    "ping": 3,
+    "speed": 594612257,
+    "uptime": 1000,
+    "operator": "DESKTOP-7V8ITPD's owner"
+  },
+  {
+    "ip": "180.199.84.240",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 659467,
+    "ping": 8,
+    "speed": 886802884,
+    "uptime": 1000,
+    "operator": "DESKTOP-PCRF4QQ's owner"
+  },
+  {
+    "ip": "211.51.79.22",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 653092,
+    "ping": 32,
+    "speed": 803079651,
+    "uptime": 75665332,
+    "operator": "DESKTOP-5T7CVUP's owner"
+  },
+  {
+    "ip": "42.125.162.163",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 652676,
+    "ping": 4,
+    "speed": 72105326,
+    "uptime": 1000,
+    "operator": "ak-NEC's owner"
+  },
+  {
+    "ip": "126.150.36.17",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 645965,
+    "ping": 13,
+    "speed": 220371704,
+    "uptime": 1000,
+    "operator": "DESKTOP-Q6EQSAD's owner"
+  },
+  {
+    "ip": "147.192.159.237",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 640429,
+    "ping": 4,
+    "speed": 201049678,
+    "uptime": 1000,
+    "operator": "DESKTOP-G1TTIRI's owner"
+  },
+  {
+    "ip": "184.22.25.125",
+    "country_long": "Thailand",
+    "country_short": "TH",
+    "score": 634309,
+    "ping": 9,
+    "speed": 36505664,
+    "uptime": 1000,
+    "operator": "admin's owner"
+  },
+  {
+    "ip": "118.157.108.139",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 630268,
+    "ping": 4,
+    "speed": 97196545,
+    "uptime": 1000,
+    "operator": "DESKTOP-9N1K7M8's owner"
+  },
+  {
+    "ip": "125.11.100.23",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 629205,
+    "ping": 20,
+    "speed": 205143534,
+    "uptime": 0,
+    "operator": "DESKTOP-P62I5KG's owner"
+  },
+  {
+    "ip": "60.93.7.71",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 628932,
+    "ping": 6,
+    "speed": 91235185,
+    "uptime": 1000,
+    "operator": "DESKTOP-NQHJKLT's owner"
+  },
+  {
+    "ip": "219.28.138.78",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 626845,
+    "ping": 7,
+    "speed": 939397380,
+    "uptime": 1000,
+    "operator": "HoanMadrid's owner"
+  },
+  {
+    "ip": "59.140.103.97",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 626791,
+    "ping": 8,
+    "speed": 469274174,
+    "uptime": 1000,
+    "operator": "DESKTOP-5E7A4R8's owner"
+  },
+  {
+    "ip": "112.109.60.35",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 625330,
+    "ping": 40,
+    "speed": 89343124,
+    "uptime": 75665332,
+    "operator": "DESKTOP-BU6GRN4's owner"
+  },
+  {
+    "ip": "60.126.62.95",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 621590,
+    "ping": 6,
+    "speed": 90276280,
+    "uptime": 1000,
+    "operator": "DESKTOP-4EQO4B6's owner"
+  },
+  {
+    "ip": "175.132.143.102",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 614979,
+    "ping": 2,
+    "speed": 752506616,
+    "uptime": 1000,
+    "operator": "NAOKI-PC's owner"
+  },
+  {
+    "ip": "126.217.201.240",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 612278,
+    "ping": 4,
+    "speed": 280233787,
+    "uptime": 1000,
+    "operator": "DESKTOP-GBP7BGL's owner"
+  },
+  {
+    "ip": "133.32.180.103",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 607621,
+    "ping": 17,
+    "speed": 96851968,
+    "uptime": 1000,
+    "operator": "EM's owner"
+  },
+  {
+    "ip": "126.86.82.54",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 602751,
+    "ping": 10,
+    "speed": 253881266,
+    "uptime": 0,
+    "operator": "DESKTOP-UDMAL9R's owner"
+  },
+  {
+    "ip": "39.3.73.200",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 600931,
+    "ping": 7,
+    "speed": 96466195,
+    "uptime": 1000,
+    "operator": "nishi291830's owner"
+  },
+  {
+    "ip": "106.179.239.207",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 596864,
+    "ping": 2,
+    "speed": 924448526,
+    "uptime": 1000,
+    "operator": "ZEN's owner"
+  },
+  {
+    "ip": "60.155.210.69",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 595865,
+    "ping": 14,
+    "speed": 288168905,
+    "uptime": 1000,
+    "operator": "ru-has-k's owner"
+  },
+  {
+    "ip": "115.143.33.229",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 594858,
+    "ping": 40,
+    "speed": 92097393,
+    "uptime": 60666332,
+    "operator": "DESKTOP-3INQJS5's owner"
+  },
+  {
+    "ip": "59.21.241.135",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 594533,
+    "ping": 22,
+    "speed": 120768920,
+    "uptime": 1000,
+    "operator": "DESKTOP-1N0FE88's owner"
+  },
+  {
+    "ip": "121.140.34.188",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 594366,
+    "ping": 27,
+    "speed": 426497054,
+    "uptime": 1000,
+    "operator": "DESKTOP-V1R4S0A's owner"
+  },
+  {
+    "ip": "131.147.151.145",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 593983,
+    "ping": 4,
+    "speed": 45733176,
+    "uptime": 1000,
+    "operator": "GeorgeDesktop's owner"
+  },
+  {
+    "ip": "59.22.219.154",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 591571,
+    "ping": 23,
+    "speed": 65245089,
+    "uptime": 1000,
+    "operator": "Admin's owner"
+  },
+  {
+    "ip": "160.86.27.247",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 590508,
+    "ping": 19,
+    "speed": 418139055,
+    "uptime": 1000,
+    "operator": "SZ6's owner"
+  },
+  {
+    "ip": "211.219.218.46",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 582246,
+    "ping": 28,
+    "speed": 253337182,
+    "uptime": 1000,
+    "operator": "DESKTOP-T87O76J's owner"
+  },
+  {
+    "ip": "133.32.183.6",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 577075,
+    "ping": 10,
+    "speed": 580284576,
+    "uptime": 1000,
+    "operator": "PSK-Define7W's owner"
+  },
+  {
+    "ip": "221.150.29.54",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 567812,
+    "ping": 29,
+    "speed": 380726353,
+    "uptime": 0,
+    "operator": "DESKTOP-I4S0F6R's owner"
+  },
+  {
+    "ip": "178.186.142.127",
+    "country_long": "Russian Federation",
+    "country_short": "RU",
+    "score": 563923,
+    "ping": 66,
+    "speed": 130680830,
+    "uptime": 60666332,
+    "operator": "HOME-PC's owner"
+  },
+  {
+    "ip": "220.84.237.227",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 563510,
+    "ping": 26,
+    "speed": 231641894,
+    "uptime": 1000,
+    "operator": "DESKTOP-QJBOODQ's owner"
+  },
+  {
+    "ip": "222.100.84.87",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 552324,
+    "ping": 28,
+    "speed": 343392324,
+    "uptime": 1000,
+    "operator": "DESKTOP-IVOJH29's owner"
+  },
+  {
+    "ip": "14.38.108.29",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 547856,
+    "ping": 33,
+    "speed": 95280266,
+    "uptime": 0,
+    "operator": "DESKTOP-9SNIMVB's owner"
+  },
+  {
+    "ip": "119.196.235.195",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 546671,
+    "ping": 31,
+    "speed": 255560945,
+    "uptime": 1000,
+    "operator": "DESKTOP-CP72QPC's owner"
+  },
+  {
+    "ip": "175.213.14.118",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 541859,
+    "ping": 37,
+    "speed": 79127857,
+    "uptime": 1000,
+    "operator": "DESKTOP-I67SFQ7's owner"
+  },
+  {
+    "ip": "222.109.178.86",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 541084,
+    "ping": 31,
+    "speed": 403605921,
+    "uptime": 0,
+    "operator": "DESKTOP-VLDV0D9's owner"
+  },
+  {
+    "ip": "94.245.130.50",
+    "country_long": "Russian Federation",
+    "country_short": "RU",
+    "score": 539318,
+    "ping": 121,
+    "speed": 88444024,
+    "uptime": 75665332,
+    "operator": "Kompukter-Venzelei's owner"
+  },
+  {
+    "ip": "121.162.193.161",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 536547,
+    "ping": 30,
+    "speed": 144021537,
+    "uptime": 1000,
+    "operator": "yuka's owner"
+  },
+  {
+    "ip": "218.148.135.229",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 536043,
+    "ping": 29,
+    "speed": 55107345,
+    "uptime": 1000,
+    "operator": "알렉스메인컴's owner"
+  },
+  {
+    "ip": "112.160.61.1",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 532245,
+    "ping": 33,
+    "speed": 173666868,
+    "uptime": 0,
+    "operator": "DESKTOP-T51ELPL's owner"
+  },
+  {
+    "ip": "182.219.78.233",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 530148,
+    "ping": 39,
+    "speed": 82579784,
+    "uptime": 1000,
+    "operator": "DESKTOP-7CQK989's owner"
+  },
+  {
+    "ip": "121.135.191.161",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 530088,
+    "ping": 33,
+    "speed": 46783979,
+    "uptime": 1000,
+    "operator": "DESKTOP-P3TRVBF's owner"
+  },
+  {
+    "ip": "180.146.91.69",
+    "country_long": "Japan",
+    "country_short": "JP",
+    "score": 525705,
+    "ping": 5,
+    "speed": 3560736,
+    "uptime": 164019332,
+    "operator": "Aida-PC's owner"
+  },
+  {
+    "ip": "211.204.50.57",
+    "country_long": "Korea Republic of",
+    "country_short": "KR",
+    "score": 525217,
+    "ping": 33,
+    "speed": 926312440,
+    "uptime": 1000,
+    "operator": "DESKTOP-6784PA0's owner"
+  },
+  {
+    "ip": "77.35.242.112",
+    "country_long": "Russian Federation",
+    "country_short": "RU",
+    "score": 520655,
+    "ping": 133,
+    "speed": 95594310,
+    "uptime": 60666332,
+    "operator": "DESKTOP-CDSE15O's owner"
+  }
+]
